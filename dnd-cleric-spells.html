@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DnD 3.5 Cleric Spell Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ── Consolidated D&D Warm Theme ── */
+    :root {
+      --bg-dark:       #04050d;
+      --bg-panel:      #080b18;
+      --bg-card:       #0d1120;
+      --bg-card-hover: #141a2e;
+      --bg-prepared:   #071410;
+      --gold:          #c8a84b;
+      --gold-light:    #e8c870;
+      --gold-dim:      #7a6428;
+      --gold-faint:    #161208;
+      --ice:           #c8a030;
+      --ice-light:     #e8c060;
+      --ice-dim:       #50380e;
+      --ice-faint:     #130e04;
+      --purple:        #3a1e68;
+      --purple-dark:   #0e0818;
+      --text-primary:  #ddd0b0;
+      --text-secondary:#907848;
+      --text-muted:    #3c3018;
+      --border-dark:   #1c1810;
+      --border-gold:   #3a2e10;
+      --red:           #8b1c1c;
+      --red-light:     #d04040;
+      --green:         #1a6e3a;
+      --green-light:   #3ace6a;
+      --slot-full:     #6e1c1c;
+      --slot-done:     #083a20;
+      --bevel-hi:      rgba(220,180,80,0.2);
+      --bevel-lo:      rgba(0,0,0,0.65);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background:      radial-gradient(ellipse 200% 100% at 50% 0%, #12081e 0%, #04030a 100%);
+      color:           var(--text-primary);
+      font-family:     'Crimson Text', Georgia, serif;
+      font-size:       20px;
+      display:         flex;
+      flex-direction:  column;
+      height:          100vh;
+      overflow:        hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background:      linear-gradient(180deg, #06040c 0%, #120828 55%, #08040e 100%);
+      border-bottom:   2px solid var(--gold-dim);
+      box-shadow:      inset 0 1px 0 rgba(220,180,80,0.14), 0 0 0 1px #020108, 0 4px 20px rgba(0,0,0,0.95);
+      padding:         12px 20px;
+      display:         flex;
+      align-items:     center;
+      gap:             14px;
+      flex-shrink:     0;
+      z-index:         100;
+    }
+
+    header h1 {
+      font-family:     'Cinzel', serif;
+      font-size:       20px;
+      font-weight:     600;
+      color:           var(--gold-light);
+      letter-spacing:  0.5px;
+      white-space:     nowrap;
+    }
+
+/* Day navigation */
+    .day-nav {
+      display:     flex;
+      align-items: center;
+      gap:         6px;
+      flex-shrink: 0;
+    }
+
+    .day-nav-btn {
+      background:    linear-gradient(180deg, #1c1610 0%, #120e08 100%);
+      border:        1px solid var(--gold-dim);
+      color:         var(--gold);
+      cursor:        pointer;
+      padding:       5px 14px;
+      border-radius: 3px;
+      font-size:     19px;
+      line-height:   1.4;
+      box-shadow:    inset 0 1px 0 var(--bevel-hi), inset 0 -1px 0 var(--bevel-lo), 0 2px 4px rgba(0,0,0,0.55);
+      transition:    background 0.1s;
+    }
+    .day-nav-btn:hover:not(:disabled) {
+      background: linear-gradient(180deg, #281e12 0%, #1c160a 100%);
+      color:      var(--gold-light);
+      box-shadow: inset 0 1px 0 var(--bevel-hi), inset 0 -1px 0 var(--bevel-lo),
+                  0 0 12px rgba(200,160,50,0.38), 0 3px 6px rgba(0,0,0,0.7);
+    }
+    .day-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .day-nav-delete { margin-left: 8px; border-color: var(--red); color: var(--red-light); }
+    .day-nav-delete:hover:not(:disabled) { background: var(--red); color: var(--text-primary); }
+
+    #dayLabel {
+      font-family: 'Cinzel', serif;
+      font-size:   18px;
+      color:       var(--gold-light);
+      text-shadow: 0 0 10px rgba(220,180,60,0.5);
+      min-width:   124px;
+      text-align:  center;
+      white-space: nowrap;
+    }
+
+    /* File dropdown */
+    .file-wrap { position: relative; flex-shrink: 0; }
+
+    #fileMenuBtn {
+      max-width:     180px;
+      overflow:      hidden;
+      text-overflow: ellipsis;
+      white-space:   nowrap;
+    }
+
+    .file-menu {
+      display:       none;
+      position:      absolute;
+      top:           calc(100% + 4px);
+      left:          0;
+      background:    linear-gradient(180deg, #160e08 0%, #100a04 100%);
+      border:        1px solid var(--gold-dim);
+      border-radius: 5px;
+      min-width:     220px;
+      z-index:       200;
+      overflow:      hidden;
+      box-shadow:    0 0 0 1px rgba(0,0,0,0.9), 0 10px 32px rgba(0,0,0,0.95), inset 0 1px 0 var(--bevel-hi);
+    }
+    .file-menu.open { display: block; }
+
+    .file-menu-item {
+      padding:     12px 18px;
+      cursor:      pointer;
+      font-size:   18px;
+      color:       var(--text-primary);
+      display:     flex;
+      justify-content: space-between;
+      align-items: center;
+      gap:         12px;
+    }
+    .file-menu-item:hover { background: linear-gradient(180deg, #201608 0%, #180e04 100%); }
+.file-menu-sep {
+      border:     none;
+      border-top: 1px solid var(--border-dark);
+      margin:     3px 0;
+    }
+    .header-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+
+    /* Generic buttons */
+    .btn {
+      background:    linear-gradient(180deg, #1c1610 0%, #120e08 100%);
+      border:        1px solid var(--gold-dim);
+      color:         var(--gold);
+      cursor:        pointer;
+      font-family:   'Cinzel', serif;
+      font-size:     15px;
+      padding:       8px 16px;
+      border-radius: 4px;
+      white-space:   nowrap;
+      box-shadow:    inset 0 1px 0 var(--bevel-hi), inset 0 -1px 0 var(--bevel-lo), 0 2px 5px rgba(0,0,0,0.55);
+      transition:    background 0.12s, color 0.12s;
+    }
+    .btn:hover {
+      background: linear-gradient(180deg, #281e12 0%, #1c160a 100%);
+      color:      var(--gold-light);
+      box-shadow: inset 0 1px 0 var(--bevel-hi), inset 0 -1px 0 var(--bevel-lo),
+                  0 0 16px rgba(200,160,50,0.42), 0 0 32px rgba(180,130,30,0.2),
+                  0 4px 10px rgba(0,0,0,0.8);
+    }
+    .btn:active {
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.75);
+    }
+
+    .btn-primary {
+      background:   linear-gradient(180deg, #2a2010 0%, #1a1408 100%);
+      border-color: var(--gold-dim);
+      color:        var(--gold-light);
+      box-shadow:   inset 0 1px 0 rgba(220,180,80,0.25), inset 0 -1px 0 var(--bevel-lo), 0 2px 5px rgba(0,0,0,0.55);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(180deg, #382c14 0%, #221808 100%);
+      color:      var(--gold-light);
+      box-shadow: inset 0 1px 0 rgba(220,180,80,0.25), inset 0 -1px 0 var(--bevel-lo),
+                  0 0 14px rgba(200,168,75,0.45), 0 0 28px rgba(150,120,50,0.2),
+                  0 4px 10px rgba(0,0,0,0.75);
+    }
+
+    .btn-danger { border-color: var(--red); color: var(--red-light); }
+    .btn-danger:hover { background: var(--slot-full); color: var(--red-light); }
+
+    /* ── PAST DAY BANNER ── */
+    .past-day-banner {
+      display:       none;
+      background:    linear-gradient(180deg, #120820 0%, #0a0614 100%);
+      border-bottom: 1px solid #4a2878;
+      padding:       8px 20px;
+      font-size:     16px;
+      color:         #9070c0;
+      text-align:    center;
+      letter-spacing: 0.4px;
+      flex-shrink:   0;
+      box-shadow:    0 2px 14px rgba(80,40,140,0.4);
+    }
+    .past-day-banner.visible { display: block; }
+
+    /* ── SETTINGS OVERLAY ── */
+    .overlay {
+      display:         none;
+      position:        fixed;
+      inset:           0;
+      background:      rgba(0,0,0,0.75);
+      z-index:         300;
+      align-items:     center;
+      justify-content: center;
+    }
+    .overlay.open { display: flex; }
+
+    .settings-box {
+      background:    linear-gradient(180deg, #160e08 0%, #100a04 100%);
+      border:        1px solid var(--gold-dim);
+      border-radius: 8px;
+      padding:       24px;
+      width:         360px;
+      max-height:    85vh;
+      overflow-y:    auto;
+      box-shadow:    inset 0 1px 0 var(--bevel-hi),
+                     0 0 0 3px rgba(0,0,0,0.92),
+                     0 0 0 4px rgba(80,50,10,0.3),
+                     0 30px 80px rgba(0,0,0,0.98);
+    }
+    .settings-box h2 {
+      font-family:   'Cinzel', serif;
+      color:         var(--gold-light);
+      text-shadow:   0 0 12px rgba(200,168,75,0.4);
+      font-size:     21px;
+      margin-bottom: 4px;
+    }
+    .settings-note {
+      font-size:     17px;
+      color:         var(--text-muted);
+      margin-bottom: 16px;
+      line-height:   1.4;
+    }
+    .slot-row {
+      display:         flex;
+      justify-content: space-between;
+      align-items:     center;
+      padding:         8px 0;
+      border-bottom:   1px solid var(--border-dark);
+      font-size:       18px;
+      color:           var(--text-secondary);
+    }
+    .slot-row input {
+      width:         70px;
+      background:    linear-gradient(180deg, #080402 0%, #0c0804 100%);
+      border:        1px solid var(--gold-dim);
+      color:         var(--text-primary);
+      border-radius: 3px;
+      padding:       4px 8px;
+      text-align:    center;
+      font-family:   'Crimson Text', serif;
+      font-size:     18px;
+      box-shadow:    inset 0 2px 5px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.2);
+    }
+    .settings-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+    .settings-divider { border: none; border-top: 1px solid var(--border-dark); margin: 16px 0 12px; }
+    .settings-box h3 {
+      font-family:   'Cinzel', serif;
+      color:         var(--gold-light);
+      text-shadow:   0 0 12px rgba(200,168,75,0.4);
+      font-size:     17px;
+      margin-bottom: 10px;
+    }
+
+    /* ── MODAL (spell + new day) ── */
+    .modal-overlay {
+      display:         none;
+      position:        fixed;
+      inset:           0;
+      background:      rgba(0,0,0,0.75);
+      z-index:         300;
+      align-items:     center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background:    linear-gradient(180deg, #160e08 0%, #100a04 100%);
+      border:        1px solid var(--gold-dim);
+      border-radius: 8px;
+      padding:       24px;
+      width:         420px;
+      max-width:     92vw;
+      box-shadow:    inset 0 1px 0 var(--bevel-hi),
+                     0 0 0 3px rgba(0,0,0,0.92),
+                     0 0 0 4px rgba(80,50,10,0.3),
+                     0 30px 80px rgba(0,0,0,0.98);
+    }
+    .modal-box h2 {
+      font-family:   'Cinzel', serif;
+      color:         var(--gold-light);
+      text-shadow:   0 0 12px rgba(200,168,75,0.4);
+      font-size:     20px;
+      margin-bottom: 16px;
+    }
+    .modal-field { margin-bottom: 14px; }
+    .modal-field label {
+      display:        block;
+      font-size:      15px;
+      color:          var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom:  5px;
+    }
+    .modal-field input,
+    .modal-field select,
+    .modal-field textarea {
+      width:         100%;
+      background:    linear-gradient(180deg, #080402 0%, #0c0804 100%);
+      border:        1px solid var(--gold-dim);
+      color:         var(--text-primary);
+      border-radius: 4px;
+      padding:       9px 12px;
+      font-family:   'Crimson Text', serif;
+      font-size:     19px;
+      box-shadow:    inset 0 2px 5px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.2);
+    }
+    .modal-field textarea { height: 80px; resize: vertical; }
+    .modal-field input:focus,
+    .modal-field select:focus,
+    .modal-field textarea:focus { outline: none; border-color: var(--gold-dim); }
+    .modal-field select option { background: var(--bg-card); }
+    .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+
+    /* New-day option buttons */
+    .newday-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+    .newday-option {
+      background:    linear-gradient(180deg, #18120e 0%, #0e0a06 100%);
+      border:        1px solid #2e2010;
+      border-radius: 6px;
+      padding:       16px 20px;
+      cursor:        pointer;
+      text-align:    left;
+      color:         var(--text-primary);
+      font-family:   'Crimson Text', serif;
+      font-size:     19px;
+      box-shadow:    inset 0 1px 0 rgba(200,180,100,0.08), 0 2px 4px rgba(0,0,0,0.45);
+      transition:    border-color 0.12s, background 0.12s;
+    }
+    .newday-option:hover {
+      background:   linear-gradient(180deg, #221a10 0%, #18120a 100%);
+      border-color: var(--gold-dim);
+      box-shadow:   inset 0 1px 0 rgba(220,180,80,0.1), 0 0 10px rgba(180,140,40,0.2),
+                    0 3px 10px rgba(0,0,0,0.65);
+    }
+    .newday-option strong {
+      display:     block;
+      color:       var(--gold);
+      text-shadow: 0 0 5px rgba(200,168,75,0.2);
+      margin-bottom: 2px;
+      font-size:   18px;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .main {
+      display:  flex;
+      flex:     1;
+      overflow: hidden;
+    }
+
+    /* ── LEFT PANEL ── */
+    .panel-left {
+      width:       52%;
+      display:     flex;
+      flex-direction: column;
+      overflow:    hidden;
+      min-width:   180px;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width:       6px;
+      flex-shrink: 0;
+      background:  linear-gradient(180deg, transparent 0%, #1e1810 10%, #1e1810 90%, transparent 100%);
+      cursor:      col-resize;
+      transition:  background 0.15s;
+      position:    relative;
+    }
+    .divider:hover, .divider.dragging {
+      background: linear-gradient(180deg, transparent 0%, var(--gold-dim) 10%, var(--gold-dim) 90%, transparent 100%);
+    }
+    .divider::after {
+      content:    '';
+      position:   absolute;
+      inset:      0 -4px;
+    }
+
+    .panel-bar {
+      background:    linear-gradient(180deg, #160e08 0%, #100a04 100%);
+      border-bottom: 1px solid var(--gold-dim);
+      padding:       12px 16px;
+      display:       flex;
+      align-items:   center;
+      gap:           10px;
+      flex-shrink:   0;
+      box-shadow:    inset 0 1px 0 rgba(160,200,244,0.06), 0 2px 10px rgba(0,0,0,0.6);
+    }
+    .panel-title {
+      font-family:    'Cinzel', serif;
+      font-size:      16px;
+      color:          var(--gold-dim);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow:    0 0 6px rgba(200,168,75,0.2);
+      flex-shrink:    0;
+    }
+
+    .search-input {
+      flex:          1;
+      background:    linear-gradient(180deg, #080402 0%, #0c0804 100%);
+      border:        1px solid var(--gold-dim);
+      color:         var(--text-primary);
+      border-radius: 4px;
+      padding:       7px 12px;
+      font-family:   'Crimson Text', serif;
+      font-size:     18px;
+      min-width:     0;
+      box-shadow:    inset 0 2px 5px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.2);
+    }
+    .search-input:focus { outline: none; border-color: var(--gold-dim); }
+
+    .btn-add-global {
+      background:    linear-gradient(180deg, #201808 0%, #160e04 100%);
+      border:        1px solid var(--gold-dim);
+      color:         var(--gold);
+      cursor:        pointer;
+      font-family:   'Cinzel', serif;
+      font-size:     14px;
+      padding:       7px 12px;
+      border-radius: 4px;
+      white-space:   nowrap;
+      flex-shrink:   0;
+      box-shadow:    inset 0 1px 0 var(--bevel-hi), inset 0 -1px 0 var(--bevel-lo), 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .btn-add-global:hover {
+      background: linear-gradient(180deg, #2a2412 0%, #1a180a 100%);
+      color:      var(--gold-light);
+      box-shadow: inset 0 1px 0 rgba(220,180,80,0.2), inset 0 -1px 0 var(--bevel-lo),
+                  0 0 10px rgba(200,168,75,0.35), 0 3px 6px rgba(0,0,0,0.65);
+    }
+
+    .spells-scroll { flex: 1; overflow-y: auto; padding: 8px 0; }
+
+    /* Level sections */
+    .level-section { margin-bottom: 4px; }
+
+    .level-header {
+      display:       flex;
+      align-items:   center;
+      padding:       12px 16px;
+      cursor:        pointer;
+      user-select:   none;
+      background:    linear-gradient(180deg, #160e08 0%, #100a04 100%);
+      border-top:    1px solid var(--gold-dim);
+      border-bottom: 1px solid #020100;
+      gap:           10px;
+      box-shadow:    inset 0 1px 0 rgba(200,168,75,0.07), 0 1px 4px rgba(0,0,0,0.4);
+    }
+    .level-header:hover { background: linear-gradient(180deg, #201608 0%, #160e04 100%); }
+
+    .level-name {
+      font-family: 'Cinzel', serif;
+      font-size:   17px;
+      color:       var(--gold-light);
+      text-shadow: 0 0 10px rgba(220,180,60,0.3);
+      flex:        1;
+    }
+    .slot-counter {
+      font-size:     16px;
+      color:         var(--text-muted);
+      border:        1px solid transparent;
+      border-radius: 10px;
+      padding:       3px 12px;
+      transition:    color 0.2s, border-color 0.2s;
+    }
+    .slot-counter.has-prepared {
+      color:        var(--gold-light);
+      border-color: var(--gold-dim);
+      text-shadow:  0 0 8px rgba(220,180,60,0.6);
+    }
+    .slot-counter.slot-full {
+      color:        var(--red-light);
+      border-color: var(--red);
+      text-shadow:  0 0 8px rgba(208,64,64,0.6);
+    }
+    .slot-counter.slot-complete {
+      color:        var(--green-light);
+      border-color: var(--green);
+      text-shadow:  0 0 8px rgba(58,206,106,0.6);
+    }
+
+    .caret {
+      font-size:  15px;
+      color:      var(--text-muted);
+      transition: transform 0.2s;
+    }
+    .level-section.collapsed .caret { transform: rotate(-90deg); }
+    .level-section.collapsed .spells-grid,
+    .level-section.collapsed .add-spell-row { display: none; }
+
+    .spells-grid {
+      display:               grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap:                   10px;
+      padding:               12px 14px;
+    }
+
+    /* Spell cards */
+    .spell-card {
+      background:    linear-gradient(165deg, #18120e 0%, #0e0a06 100%);
+      border:        2px solid var(--gold-dim);
+      border-radius: 6px;
+      padding:       12px 14px 10px;
+      cursor:        pointer;
+      position:      relative;
+      min-height:    95px;
+      overflow:      hidden;
+      box-shadow:    inset 0 1px 0 rgba(200,180,100,0.07), 0 2px 6px rgba(0,0,0,0.5);
+      transition:    transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    }
+    .spell-card:hover {
+      background:   linear-gradient(165deg, #221a10 0%, #18120a 100%);
+      border-color: var(--gold);
+      box-shadow:   inset 0 1px 0 rgba(220,180,80,0.1), 0 0 14px rgba(180,140,40,0.22),
+                    0 4px 14px rgba(0,0,0,0.7);
+    }
+    .spell-card.is-prepared {
+      background:  linear-gradient(165deg, #0c1e12 0%, #06120a 100%);
+      border-color: var(--green);
+      box-shadow:  inset 0 0 20px rgba(76,174,76,0.08), 0 0 0 1px var(--green), 0 2px 6px rgba(0,0,0,0.5);
+    }
+    .spell-card.slot-full-card        { cursor: not-allowed; opacity: 0.5; }
+    .spell-card.slot-full-card:hover {
+      background:   linear-gradient(165deg, #18120e 0%, #0e0a06 100%);
+      border-color: var(--gold-dim);
+      box-shadow:   inset 0 1px 0 rgba(200,180,100,0.07), 0 2px 6px rgba(0,0,0,0.5);
+      transform:    none;
+    }
+
+    .spell-card-name {
+      font-family:   'Cinzel', serif;
+      font-size:     16px;
+      color:         var(--gold-light);
+      text-shadow:   0 0 8px rgba(220,180,60,0.22);
+      margin-bottom: 4px;
+      padding-right: 50px;
+    }
+    .spell-card-desc {
+      font-size:   15px;
+      color:       var(--text-secondary);
+      line-height: 1.35;
+    }
+
+    /* Card action buttons (edit / delete) */
+    .card-actions {
+      position: absolute;
+      top:      5px;
+      right:    5px;
+      display:  none;
+      gap:      2px;
+    }
+    .spell-card:hover .card-actions { display: flex; }
+
+    .btn-card-action {
+      background:      linear-gradient(180deg, #141008 0%, #0c0804 100%);
+      border:          1px solid var(--border-dark);
+      color:           var(--text-muted);
+      cursor:          pointer;
+      width:           26px;
+      height:          26px;
+      border-radius:   3px;
+      font-size:       15px;
+      display:         flex;
+      align-items:     center;
+      justify-content: center;
+      line-height:     1;
+      padding:         0;
+      box-shadow:      inset 0 1px 0 rgba(200,180,100,0.12), 0 1px 3px rgba(0,0,0,0.5);
+    }
+    .btn-card-action:hover          { color: var(--text-primary); border-color: var(--gold-dim); }
+    .btn-card-delete:hover          { color: var(--red-light);   border-color: var(--red); }
+
+    /* Card badges */
+    .card-badges {
+      display:     flex;
+      gap:         5px;
+      margin-top:  5px;
+      align-items: center;
+    }
+    .badge-fav {
+      font-size:   18px;
+      color:       var(--text-muted);
+      cursor:      pointer;
+      line-height: 1;
+      transition:  color 0.15s;
+    }
+    .badge-fav:hover  { color: var(--gold); }
+    .badge-fav.fav-active { color: var(--gold-light); }
+    .badge-count {
+      background:    var(--green);
+      color:         #c0f0c0;
+      border-radius: 8px;
+      font-size:     14px;
+      padding:       1px 8px;
+      font-family:   'Cinzel', serif;
+      box-shadow:    0 0 5px rgba(76,174,76,0.5);
+    }
+    .btn-badge-remove {
+      background:    rgba(100,20,20,0.5);
+      border:        1px solid var(--red);
+      color:         var(--red-light);
+      cursor:        pointer;
+      border-radius: 6px;
+      font-size:     12px;
+      padding:       1px 6px;
+      line-height:   1;
+      transition:    background 0.12s, color 0.12s;
+    }
+    .btn-badge-remove:hover { background: var(--red); color: #ffa0a0; }
+
+    /* Add spell row */
+    .add-spell-row {
+      padding: 4px 10px 8px;
+    }
+    .btn-add-spell {
+      width:         100%;
+      background:    none;
+      border:        1px dashed var(--gold-dim);
+      border-radius: 5px;
+      color:         var(--gold-dim);
+      cursor:        pointer;
+      font-family:   'Crimson Text', serif;
+      font-size:     17px;
+      padding:       9px;
+      text-align:    center;
+      box-shadow:    inset 0 0 12px rgba(200,168,75,0.03);
+      transition:    color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .btn-add-spell:hover { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-faint); }
+
+    /* ── RIGHT PANEL ── */
+    .panel-right {
+      flex:     1;
+      display:  flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .prep-scroll {
+      flex:       1;
+      overflow-y: auto;
+      padding:    14px 18px;
+      background: linear-gradient(180deg, #080604 0%, #030202 100%);
+    }
+
+    .prep-level-block { margin-bottom: 14px; }
+
+    .prep-level-header {
+      display:       flex;
+      align-items:   center;
+      gap:           8px;
+      margin-bottom: 5px;
+    }
+    .prep-level-name {
+      font-family:    'Cinzel', serif;
+      font-size:      16px;
+      color:          var(--gold-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-shadow:    0 0 5px rgba(200,168,75,0.15);
+      flex:           1;
+    }
+    .prep-slot-badge {
+      font-size:     15px;
+      color:         var(--text-muted);
+      border:        1px solid transparent;
+      border-radius: 8px;
+      padding:       3px 10px;
+    }
+    .prep-slot-badge.complete {
+      color:        var(--green-light);
+      border-color: var(--green);
+      text-shadow:  0 0 5px rgba(76,174,76,0.4);
+    }
+    .prep-slot-badge.full {
+      color:        var(--red-light);
+      border-color: var(--red);
+      text-shadow:  0 0 5px rgba(208,64,64,0.4);
+    }
+
+    .prep-item {
+      display:       flex;
+      align-items:   center;
+      gap:           8px;
+      padding:       10px 14px;
+      background:    linear-gradient(180deg, #140e08 0%, #0e0a06 100%);
+      border:        1px solid #2e2010;
+      border-radius: 5px;
+      margin-bottom: 5px;
+      box-shadow:    inset 0 1px 0 rgba(200,180,100,0.05), 0 1px 4px rgba(0,0,0,0.45);
+      transition:    transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, opacity 0.15s;
+    }
+    .prep-item.is-used { opacity: 0.45; }
+    .prep-item:not(.is-used):not(.read-only):hover {
+      transform:    translateY(-2px) scale(1.01);
+      border-color: var(--gold-dim);
+      box-shadow:   0 0 0 1px var(--gold-dim), inset 0 0 14px rgba(200,160,50,0.07),
+                    0 6px 18px rgba(0,0,0,0.65);
+    }
+
+    .prep-item-name {
+      flex:      1;
+      font-size: 19px;
+      color:     var(--text-primary);
+    }
+    .prep-item.is-used .prep-item-name { text-decoration: line-through; color: var(--text-muted); }
+
+    .prep-item.read-only .prep-item-controls { display: none; }
+    .prep-item-status {
+      display:   none;
+      font-size: 18px;
+      color:     var(--text-muted);
+    }
+    .prep-item.read-only .prep-item-status { display: block; }
+    .prep-item.read-only.is-used .prep-item-status { color: var(--green-light); }
+
+    .prep-item-controls { display: flex; gap: 4px; flex-shrink: 0; }
+
+    .btn-micro {
+      background:    linear-gradient(180deg, #160e08 0%, #100a04 100%);
+      border:        1px solid var(--gold-dim);
+      color:         var(--gold);
+      cursor:        pointer;
+      border-radius: 3px;
+      padding:       5px 10px;
+      font-size:     15px;
+      transition:    background 0.12s, color 0.12s;
+      box-shadow:    inset 0 1px 0 rgba(200,180,100,0.08), 0 1px 3px rgba(0,0,0,0.45);
+    }
+    .btn-micro:hover  { background: linear-gradient(180deg, #201608 0%, #180e04 100%); color: var(--gold-light); }
+    .btn-micro.active {
+      background:   var(--slot-done);
+      border-color: var(--green);
+      color:        var(--green-light);
+      box-shadow:   inset 0 2px 4px rgba(0,0,0,0.55), 0 0 8px rgba(58,206,106,0.35);
+    }
+    .use-btn.active:hover { background: var(--green); }
+
+    .empty-msg {
+      text-align:  center;
+      color:       var(--text-muted);
+      font-size:   19px;
+      padding:     32px 16px;
+      line-height: 1.6;
+    }
+
+    /* Scrollbar — Chrome/Edge + Firefox */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #4a3410 #030202;
+    }
+    ::-webkit-scrollbar       { width: 7px; }
+    ::-webkit-scrollbar-track { background: #030202; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #2a1e06, #4a3410, #2a1e06); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #4a3410, #6a4c18, #4a3410); }
+
+    /* ══════════════════════════════════════════════════════════
+       ANIMATIONS & PARTICLE EFFECTS
+       ══════════════════════════════════════════════════════════ */
+
+    @keyframes snowfall {
+      0%   { transform: translateY(-20px) translateX(0px);                  opacity: 0; }
+      8%   { opacity: var(--snow-opacity, 0.5); }
+      92%  { opacity: var(--snow-opacity, 0.5); }
+      100% { transform: translateY(102vh) translateX(var(--snow-drift,0px)); opacity: 0; }
+    }
+    @keyframes snow-sway {
+      0%, 100% { margin-left: 0; }
+      25%       { margin-left: 12px; }
+      75%       { margin-left: -12px; }
+    }
+    @keyframes btn-shimmer {
+      0%   { left: -80%; }
+      100% { left: 160%; }
+    }
+    @keyframes card-shimmer {
+      0%   { left: -100%; }
+      100% { left: 210%; }
+    }
+    @keyframes pulse-prepared {
+      0%, 100% { box-shadow: inset 0 0 20px rgba(76,174,76,0.08), 0 0 0 1px var(--green), 0 2px 6px rgba(0,0,0,0.5); }
+      50%       { box-shadow: inset 0 0 32px rgba(76,174,76,0.22), 0 0 0 1px #5cce5c, 0 0 18px rgba(76,174,76,0.32), 0 4px 10px rgba(0,0,0,0.55); }
+    }
+    @keyframes title-glow {
+      0%, 100% { text-shadow: 0 0 16px rgba(200,168,75,0.55), 0 1px 2px #000; }
+      50%       { text-shadow: 0 0 32px rgba(200,168,75,1), 0 0 64px rgba(200,168,75,0.35), 0 1px 2px #000; }
+    }
+    @keyframes rune-spin {
+      0%   { transform: rotate(0deg);   opacity: 0.35; }
+      50%  { transform: rotate(180deg); opacity: 0.7; }
+      100% { transform: rotate(360deg); opacity: 0.35; }
+    }
+
+    /* ── SNOWFLAKES ── */
+    .snowflake {
+      position:       fixed;
+      top:            -16px;
+      border-radius:  50%;
+      background:     radial-gradient(circle, rgba(255,250,240,0.95) 0%, rgba(255,238,200,0.6) 100%);
+      pointer-events: none;
+      z-index:        5;
+      animation:
+        snowfall  var(--snow-dur,10s) var(--snow-delay,0s) linear   infinite,
+        snow-sway var(--snow-sway,6s) var(--snow-delay,0s) ease-in-out infinite;
+      box-shadow: 0 0 4px rgba(255,240,200,0.55);
+    }
+
+    /* ── HEADER TITLE: slow gold pulse ── */
+    header h1 { animation: title-glow 6s ease-in-out infinite; }
+
+    /* ── BUTTONS: shimmer on hover ── */
+    .btn, .day-nav-btn, .btn-add-global { position: relative; overflow: hidden; }
+    .btn::after, .day-nav-btn::after, .btn-add-global::after {
+      content:        '';
+      position:       absolute;
+      top:            -10%;
+      left:           -80%;
+      width:          55%;
+      height:         120%;
+      background:     linear-gradient(105deg, transparent 20%, rgba(255,218,112,0.28) 50%, transparent 80%);
+      transform:      skewX(-15deg);
+      pointer-events: none;
+      z-index:        2;
+    }
+    .btn:hover::after,
+    .day-nav-btn:hover:not(:disabled)::after,
+    .btn-add-global:hover::after { animation: btn-shimmer 0.55s ease-out forwards; }
+
+    .btn-primary::after { background: linear-gradient(105deg, transparent 20%, rgba(255,230,130,0.4) 50%, transparent 80%); }
+
+    /* ── SPELL CARDS: lift + shimmer + rune + pulse ── */
+    /* Shimmer sweep (::before) */
+    .spell-card::before {
+      content:        '';
+      position:       absolute;
+      top:            0;
+      left:           -100%;
+      width:          55%;
+      height:         100%;
+      background:     linear-gradient(90deg, transparent, rgba(255,220,140,0.08), transparent);
+      transform:      skewX(-8deg);
+      pointer-events: none;
+      z-index:        1;
+    }
+    /* Corner rune (::after) */
+    .spell-card::after {
+      content:        '\2726';
+      position:       absolute;
+      bottom:         5px;
+      right:          8px;
+      font-size:      11px;
+      color:          rgba(120,90,30,0.3);
+      pointer-events: none;
+      z-index:        1;
+      transition:     color 0.3s, transform 0.4s;
+      display:        block;
+      line-height:    1;
+    }
+    .spell-card:not(.is-prepared):not(.slot-full-card):hover { transform: translateY(-4px); }
+    .spell-card:not(.is-prepared):not(.slot-full-card):hover::before { animation: card-shimmer 0.65s ease-out forwards; }
+    .spell-card:hover::after { color: rgba(200,168,75,0.65); transform: rotate(45deg); }
+
+    .spell-card.is-prepared           { animation: pulse-prepared 3.5s ease-in-out infinite; }
+    .spell-card.is-prepared::after    { color: rgba(76,174,76,0.55); }
+    .spell-card.is-prepared:hover::after { animation: rune-spin 1.2s linear infinite; }
+
+    .spell-card[data-level] { border: 2px solid var(--gold-dim); }
+
+    /* ══════════════════════════════════════════════════════════
+       BUTTON CLICK ANIMATIONS
+       ══════════════════════════════════════════════════════════ */
+
+    @keyframes click-burst {
+      0%   { outline: 0px solid rgba(220,180,75,0.9); outline-offset: 0;    filter: brightness(1.6); }
+      25%  { filter: brightness(1); }
+      100% { outline: 10px solid rgba(220,180,75,0);  outline-offset: 10px; filter: brightness(1); }
+    }
+    @keyframes click-burst-gold {
+      0%   { outline: 0px solid rgba(220,180,75,0.9); outline-offset: 0;    filter: brightness(1.6); }
+      25%  { filter: brightness(1); }
+      100% { outline: 10px solid rgba(220,180,75,0);  outline-offset: 10px; filter: brightness(1); }
+    }
+    @keyframes click-burst-red {
+      0%   { outline: 0px solid rgba(208,64,64,0.9); outline-offset: 0;    filter: brightness(1.5); }
+      25%  { filter: brightness(1); }
+      100% { outline: 10px solid rgba(208,64,64,0);  outline-offset: 10px; filter: brightness(1); }
+    }
+    .click-burst                       { animation: click-burst      0.45s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+    .btn-primary.click-burst           { animation: click-burst-gold 0.45s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+    .btn-danger.click-burst            { animation: click-burst-red  0.45s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+    .day-nav-delete.click-burst        { animation: click-burst-red  0.45s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+
+    /* Active/press: scale down */
+    .btn:active, .day-nav-btn:active, .btn-add-global:active, .btn-micro:active {
+      transform: scale(0.96) translateY(1px);
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       SPELL TOOLTIP
+       ══════════════════════════════════════════════════════════ */
+
+    .spell-tooltip {
+      position:       fixed;
+      background:     linear-gradient(180deg, #160e08 0%, #0e0804 100%);
+      border:         1px solid var(--gold-dim);
+      border-radius:  6px;
+      padding:        14px 18px;
+      max-width:      300px;
+      min-width:      200px;
+      z-index:        250;
+      pointer-events: none;
+      opacity:        0;
+      box-shadow:     0 0 0 3px rgba(0,0,0,0.92),
+                      0 0 0 4px rgba(80,50,10,0.25),
+                      inset 0 1px 0 rgba(220,180,80,0.12),
+                      0 12px 40px rgba(0,0,0,0.95);
+    }
+    .spell-tooltip.visible { opacity: 1; }
+    .tooltip-desc {
+      font-size:   16px;
+      color:       var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ── SPELL CARD ANIMATIONS ── */
+
+    @keyframes card-flip-in {
+      0%   { transform: perspective(500px) rotateY(180deg); filter: brightness(0.5); }
+      45%  { transform: perspective(500px) rotateY(90deg);  filter: brightness(1.7); }
+      100% { transform: perspective(500px) rotateY(0deg);   filter: brightness(1);   }
+    }
+    @keyframes card-flip-out {
+      0%   { transform: perspective(500px) rotateY(-180deg); filter: brightness(0.5); }
+      45%  { transform: perspective(500px) rotateY(-90deg);  filter: brightness(1.7); }
+      100% { transform: perspective(500px) rotateY(0deg);    filter: brightness(1);   }
+    }
+    @keyframes card-bounce {
+      0%   { transform: translateY(0);     }
+      35%  { transform: translateY(-10px); }
+      65%  { transform: translateY(3px);   }
+      100% { transform: translateY(0);     }
+    }
+
+    .spell-card.anim-flip-in  { animation: card-flip-in  0.6s ease-out forwards; }
+    .spell-card.anim-flip-out { animation: card-flip-out 0.6s ease-out forwards; }
+    .spell-card.anim-bounce   { animation: card-bounce   0.35s ease-out forwards; }
+  </style>
+</head>
+<body>
+
+<!-- Spell tooltip (shown on prepared-list hover) -->
+<div id="spellTooltip" class="spell-tooltip">
+  <div class="tooltip-desc"></div>
+</div>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════ -->
+<header>
+  <h1>&#9876; DnD 3.5 Cleric Spell Manager</h1>
+
+  <!-- Day navigation -->
+  <div class="day-nav">
+    <button class="day-nav-btn" id="btnPrevDay" onclick="prevDay()" title="Previous day">&#9664;</button>
+    <span id="dayLabel">Day 1</span>
+    <button class="day-nav-btn" id="btnNextDay" onclick="nextDay()" title="Next day">&#9654;</button>
+    <button class="day-nav-btn day-nav-delete" id="btnDeleteDay" onclick="deleteDay()" title="Remove this day">&#10005;</button>
+  </div>
+
+  <div class="header-right">
+    <!-- File dropdown -->
+    <div class="file-wrap" id="fileWrap">
+      <button class="btn" id="fileMenuBtn" onclick="toggleFileMenu()">&#128190; <span id="fileStatus">Unsaved</span> &#9662;</button>
+      <div class="file-menu" id="fileMenu">
+        <div class="file-menu-item" onclick="saveFile()">Export JSON&#8230;</div>
+        <div class="file-menu-item" onclick="openFile()">Import JSON&#8230;</div>
+      </div>
+    </div>
+
+    <button class="btn" onclick="openSettings()">&#9881; Settings</button>
+    <button class="btn btn-danger" onclick="promptNewDay()">&#9790; New Day</button>
+  </div>
+</header>
+
+<!-- Past-day read-only banner -->
+<div class="past-day-banner" id="pastDayBanner"></div>
+
+<!-- ═══ SETTINGS OVERLAY ══════════════════════════════════════ -->
+<div class="overlay" id="overlay" onclick="onOverlayClick(event)">
+  <div class="settings-box">
+    <h2>&#9881; Spell Slot Configuration</h2>
+    <p class="settings-note">Set your prepared spell slots per level, including bonus spells from your Wisdom modifier and domain slots.</p>
+    <div id="slotForm"></div>
+    <div class="settings-actions">
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+      <button class="btn"             onclick="closeSettings()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SPELL MODAL (add / edit) ════════════════════════════ -->
+<div class="modal-overlay" id="spellModal" onclick="onSpellModalBg(event)">
+  <div class="modal-box">
+    <h2 id="spellModalTitle">Add Spell</h2>
+    <div class="modal-field">
+      <label>Level</label>
+      <select id="modalLevel">
+        <option value="0">Level 0 &mdash; Orisons</option>
+        <option value="1">Level 1</option>
+        <option value="2">Level 2</option>
+        <option value="3">Level 3</option>
+        <option value="4">Level 4</option>
+        <option value="5">Level 5</option>
+        <option value="6">Level 6</option>
+        <option value="7">Level 7</option>
+        <option value="8">Level 8</option>
+        <option value="9">Level 9</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Name</label>
+      <input type="text" id="modalName" placeholder="Spell name&hellip;" onkeydown="onSpellModalKey(event)">
+    </div>
+    <div class="modal-field">
+      <label>Description</label>
+      <textarea id="modalDesc" placeholder="Spell description&hellip;" onkeydown="onSpellModalKey(event)"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn"         onclick="closeSpellModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSpell()">Save Spell</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NEW DAY MODAL ════════════════════════════════════════ -->
+<div class="modal-overlay" id="newDayModal" onclick="onNewDayModalBg(event)">
+  <div class="modal-box">
+    <h2>&#9790; New Day</h2>
+    <div class="newday-options">
+      <button class="newday-option" onclick="startNewDay('clean')">
+        <strong>Clean Slate</strong>
+        Start fresh with no prepared spells.
+      </button>
+      <button class="newday-option" onclick="startNewDay('copy')">
+        <strong>Copy Today&rsquo;s Spells</strong>
+        Keep the same spell list, all marked as uncast.
+      </button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeNewDayModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- Left: spell browser -->
+  <div class="panel-left">
+    <div class="panel-bar">
+      <span class="panel-title">Available Spells</span>
+      <button class="btn-add-global" onclick="openAddSpell(-1)" title="Add a spell at any level">+ Add Spell</button>
+      <input class="search-input" id="searchInput" type="text" placeholder="Search&hellip;" oninput="renderLeft()">
+    </div>
+    <div class="spells-scroll" id="leftPanel"></div>
+  </div>
+
+  <div class="divider" id="divider"></div>
+
+  <!-- Right: prepared spells -->
+  <div class="panel-right">
+    <div class="panel-bar">
+      <span class="panel-title" id="rightPanelTitle">Today&rsquo;s Prepared Spells</span>
+    </div>
+    <div class="prep-scroll" id="rightPanel"></div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DEFAULT SPELL DATA
+// ═══════════════════════════════════════════════════════════════
+
+const DEFAULT_SPELLS = [
+  // Level 0
+  { id:0,  level:0, name:"Create Water",          desc:"Creates 2 gallons/level of pure water." },
+  { id:1,  level:0, name:"Cure Minor Wounds",     desc:"Cures 1 point of damage." },
+  { id:2,  level:0, name:"Detect Magic",          desc:"Detects spells and magic items within 60 ft." },
+  { id:3,  level:0, name:"Detect Poison",         desc:"Detects poison in one creature or object." },
+  { id:4,  level:0, name:"Guidance",              desc:"+1 on one attack roll, saving throw, or skill check." },
+  { id:5,  level:0, name:"Inflict Minor Wounds",  desc:"Touch attack, 1 point of damage." },
+  { id:6,  level:0, name:"Light",                 desc:"Object shines like a torch." },
+  { id:7,  level:0, name:"Mending",               desc:"Makes minor repairs on an object." },
+  { id:8,  level:0, name:"Purify Food and Drink", desc:"Purifies 1 cu. ft./level of food or water." },
+  { id:9,  level:0, name:"Read Magic",            desc:"Read scrolls and spellbooks." },
+  { id:10, level:0, name:"Resistance",            desc:"Subject gains +1 on saving throws." },
+  { id:11, level:0, name:"Virtue",                desc:"Subject gains 1 temporary hp." },
+  { id:219, level:0, name:"Clean",               desc:"Cleans grime and dirt from one object or person. (RR)" },
+  { id:220, level:0, name:"Quick Sober",         desc:"Cures the target of alcoholic influences. (RR)" },
+  { id:221, level:0, name:"Shockwave",           desc:"Knock a foe prone from a distance by punching the ground. (RR)" },
+
+  // Level 1
+  { id:12, level:1, name:"Bane",                                desc:"Enemies take -1 on attack rolls and saves against fear." },
+  { id:13, level:1, name:"Bless",                               desc:"Allies gain +1 on attack rolls and saves against fear." },
+  { id:14, level:1, name:"Bless Water",                         desc:"Makes holy water. (M)" },
+  { id:15, level:1, name:"Cause Fear",                          desc:"One creature of 5 HD or less flees for 1d4 rounds." },
+  { id:16, level:1, name:"Command",                             desc:"One subject obeys selected command for 1 round." },
+  { id:17, level:1, name:"Comprehend Languages",                desc:"You understand all spoken and written languages." },
+  { id:18, level:1, name:"Cure Light Wounds",                   desc:"Cures 1d8 damage +1/level (max +5)." },
+  { id:19, level:1, name:"Curse Water",                         desc:"Makes unholy water. (M)" },
+  { id:20, level:1, name:"Deathwatch",                          desc:"Reveals how near death subjects within 30 ft. are." },
+  { id:21, level:1, name:"Detect Chaos/Evil/Good/Law",          desc:"Reveals creatures, spells, or objects of selected alignment." },
+  { id:22, level:1, name:"Detect Undead",                       desc:"Reveals undead within 60 ft." },
+  { id:23, level:1, name:"Divine Favor",                        desc:"You gain +1 per three levels on attack and damage rolls." },
+  { id:24, level:1, name:"Doom",                                desc:"One subject takes -2 on attack rolls, damage rolls, saves, and checks." },
+  { id:25, level:1, name:"Endure Elements",                     desc:"Exist comfortably in hot or cold environments." },
+  { id:26, level:1, name:"Entropic Shield",                     desc:"Ranged attacks against you have 20% miss chance." },
+  { id:27, level:1, name:"Hide from Undead",                    desc:"Undead can't perceive one subject/level." },
+  { id:28, level:1, name:"Inflict Light Wounds",                desc:"Touch deals 1d8 damage +1/level (max +5)." },
+  { id:29, level:1, name:"Magic Stone",                         desc:"Three stones gain +1 on attack, deal 1d6+1 damage." },
+  { id:30, level:1, name:"Magic Weapon",                        desc:"Weapon gains +1 bonus." },
+  { id:31, level:1, name:"Obscuring Mist",                      desc:"Fog surrounds you." },
+  { id:32, level:1, name:"Protection from Chaos/Evil/Good/Law", desc:"+2 to AC and saves, counter mind control, hedge out elementals and outsiders." },
+  { id:33, level:1, name:"Remove Fear",                         desc:"Suppresses fear or gives +4 on saves against fear for one subject + one per four levels." },
+  { id:34, level:1, name:"Sanctuary",                           desc:"Opponents can't attack you, and you can't attack." },
+  { id:35, level:1, name:"Shield of Faith",                     desc:"Aura grants +2 or higher deflection bonus." },
+  { id:36, level:1, name:"Summon Monster I",                    desc:"Calls extraplanar creature to fight for you." },
+  { id:222, level:1, name:"Champion Swimmer",                  desc:"The subject gains a +15 competence bonus to all swim checks. (RR2)" },
+  { id:223, level:1, name:"Detect Shapechangers",              desc:"Detects the presence and strength of shapechangers. (RR2)" },
+  { id:224, level:1, name:"Invisibility to Constructs",        desc:"As invisibility, but affects only constructs. (DD)" },
+  { id:225, level:1, name:"Invisibility to Undead",            desc:"Undead can't perceive one subject/level." },
+  { id:226, level:1, name:"Locate Water",                      desc:"Locates sources of water, fresh or salt. (RR2)" },
+  { id:227, level:1, name:"Madriel's Empathic Resonance",      desc:"The subject experiences the emotions of those whom he wrongs. (RR)" },
+  { id:228, level:1, name:"Minor Symbol of Divinity",          desc:"Creates minor magical protections within a small area. (RR)" },
+  { id:229, level:1, name:"Prevarication's Bounty",            desc:"Causes the tongue of the victim to swell when the victim lies. (RR)" },
+  { id:230, level:1, name:"Random Action",                     desc:"One creature acts randomly for one round." },
+  { id:231, level:1, name:"Shockwave Strike",                  desc:"Transmit the force of a bludgeoning weapon through the ground to an opponent. (RR)" },
+  { id:232, level:1, name:"Silver Sword",                      desc:"Causes a weapon to count as silver for any special attack purposes. (DD)" },
+  { id:233, level:1, name:"Smite",                             desc:"Invokes the paladin's smite power. (RR)" },
+  { id:234, level:1, name:"Tanil's Touch",                     desc:"Allows the choice of two outcomes when rolling dice. (RR)" },
+
+  // Level 2
+  { id:37, level:2, name:"Aid",                     desc:"+1 on attack rolls and saves against fear, 1d8 temporary hp +1/level (max +10)." },
+  { id:38, level:2, name:"Align Weapon",            desc:"Weapon becomes good, evil, lawful, or chaotic." },
+  { id:39, level:2, name:"Augury",                  desc:"Learns whether an action will be good or bad. (M, F)" },
+  { id:40, level:2, name:"Bear's Endurance",        desc:"Subject gains +4 to Con for 1 min./level." },
+  { id:41, level:2, name:"Bull's Strength",         desc:"Subject gains +4 to Str for 1 min./level." },
+  { id:42, level:2, name:"Calm Emotions",           desc:"Calms creatures, negating emotion effects." },
+  { id:43, level:2, name:"Consecrate",              desc:"Fills area with positive energy, making undead weaker. (M)" },
+  { id:44, level:2, name:"Cure Moderate Wounds",    desc:"Cures 2d8 damage +1/level (max +10)." },
+  { id:45, level:2, name:"Darkness",                desc:"20-ft. radius of supernatural shadow." },
+  { id:46, level:2, name:"Death Knell",             desc:"Kills dying creature; you gain 1d8 temporary hp, +2 to Str, and +1 level." },
+  { id:47, level:2, name:"Delay Poison",            desc:"Stops poison from harming subject for 1 hour/level." },
+  { id:48, level:2, name:"Desecrate",               desc:"Fills area with negative energy, making undead stronger. (M)" },
+  { id:49, level:2, name:"Eagle's Splendor",        desc:"Subject gains +4 to Cha for 1 min./level." },
+  { id:50, level:2, name:"Enthrall",                desc:"Captivates all within 100 ft. + 10 ft./level." },
+  { id:51, level:2, name:"Find Traps",              desc:"Notice traps as a rogue does." },
+  { id:52, level:2, name:"Gentle Repose",           desc:"Preserves one corpse." },
+  { id:53, level:2, name:"Hold Person",             desc:"Paralyzes one humanoid for 1 round/level." },
+  { id:54, level:2, name:"Inflict Moderate Wounds", desc:"Touch attack, 2d8 damage +1/level (max +10)." },
+  { id:55, level:2, name:"Make Whole",              desc:"Repairs an object." },
+  { id:56, level:2, name:"Owl's Wisdom",            desc:"Subject gains +4 to Wis for 1 min./level." },
+  { id:57, level:2, name:"Remove Paralysis",        desc:"Frees one or more creatures from paralysis or slow effect." },
+  { id:58, level:2, name:"Resist Energy",           desc:"Ignores 10 (or more) points of damage/attack from specified energy type." },
+  { id:59, level:2, name:"Restoration, Lesser",     desc:"Dispels magical ability penalty or repairs 1d4 ability damage." },
+  { id:60, level:2, name:"Shatter",                 desc:"Sonic vibration damages objects or crystalline creatures." },
+  { id:61, level:2, name:"Shield Other",            desc:"You take half of subject's damage. (F)" },
+  { id:62, level:2, name:"Silence",                 desc:"Negates sound in 15-ft. radius." },
+  { id:63, level:2, name:"Sound Burst",             desc:"Deals 1d8 sonic damage to subjects; may stun them." },
+  { id:64, level:2, name:"Spiritual Weapon",        desc:"Magic weapon attacks on its own." },
+  { id:65, level:2, name:"Status",                  desc:"Monitors condition, position of allies." },
+  { id:66, level:2, name:"Summon Monster II",       desc:"Calls extraplanar creature to fight for you." },
+  { id:67, level:2, name:"Undetectable Alignment",  desc:"Conceals alignment for 24 hours." },
+  { id:68, level:2, name:"Zone of Truth",           desc:"Subjects within range cannot lie." },
+
+  // Level 3
+  { id:69, level:3, name:"Animate Dead",                             desc:"Creates undead skeletons and zombies. (M)" },
+  { id:70, level:3, name:"Bestow Curse",                             desc:"-6 to an ability score; -4 on attack rolls, saves, and checks; or 50% chance of losing each action." },
+  { id:71, level:3, name:"Blindness/Deafness",                       desc:"Makes subject blinded or deafened." },
+  { id:72, level:3, name:"Contagion",                                desc:"Infects subject with chosen disease." },
+  { id:73, level:3, name:"Continual Flame",                          desc:"Makes a permanent, heatless torch. (M)" },
+  { id:74, level:3, name:"Create Food and Water",                    desc:"Feeds three humans (or one horse)/level." },
+  { id:75, level:3, name:"Cure Serious Wounds",                      desc:"Cures 3d8 damage +1/level (max +15)." },
+  { id:76, level:3, name:"Daylight",                                 desc:"60-ft. radius of bright light." },
+  { id:77, level:3, name:"Deeper Darkness",                          desc:"Object sheds supernatural shadow in 60-ft. radius." },
+  { id:78, level:3, name:"Dispel Magic",                             desc:"Cancels spells and magical effects." },
+  { id:79, level:3, name:"Glyph of Warding",                         desc:"Inscription harms those who pass it. (M)" },
+  { id:80, level:3, name:"Helping Hand",                             desc:"Ghostly hand leads subject to you." },
+  { id:81, level:3, name:"Inflict Serious Wounds",                   desc:"Touch attack, 3d8 damage +1/level (max +15)." },
+  { id:82, level:3, name:"Invisibility Purge",                       desc:"Dispels invisibility within 5 ft./level." },
+  { id:83, level:3, name:"Locate Object",                            desc:"Senses direction toward object (specific or type)." },
+  { id:84, level:3, name:"Magic Circle against Chaos/Evil/Good/Law", desc:"As protection spells, but 10-ft. radius and 10 min./level." },
+  { id:85, level:3, name:"Magic Vestment",                           desc:"Armor or shield gains +1 enhancement per four levels." },
+  { id:86, level:3, name:"Meld into Stone",                          desc:"You and your gear merge with stone." },
+  { id:87, level:3, name:"Obscure Object",                           desc:"Masks object against scrying." },
+  { id:88, level:3, name:"Prayer",                                   desc:"Allies +1 bonus on most rolls, enemies -1 penalty." },
+  { id:89, level:3, name:"Protection from Energy",                   desc:"Absorb 12 points/level of damage from one kind of energy." },
+  { id:90, level:3, name:"Remove Blindness/Deafness",                desc:"Cures normal or magical conditions." },
+  { id:91, level:3, name:"Remove Curse",                             desc:"Frees object or person from curse." },
+  { id:92, level:3, name:"Remove Disease",                           desc:"Cures all diseases affecting subject." },
+  { id:93, level:3, name:"Searing Light",                            desc:"Ray deals 1d8/two levels damage, more against undead." },
+  { id:94, level:3, name:"Speak with Dead",                          desc:"Corpse answers one question/two levels." },
+  { id:95, level:3, name:"Stone Shape",                              desc:"Sculpts stone into any shape." },
+  { id:96, level:3, name:"Summon Monster III",                       desc:"Calls extraplanar creature to fight for you." },
+  { id:97, level:3, name:"Water Breathing",                          desc:"Subjects can breathe underwater." },
+  { id:98, level:3, name:"Water Walk",                               desc:"Subject treads on water as if solid." },
+  { id:99, level:3, name:"Wind Wall",                                desc:"Deflects arrows, smaller creatures, and gases." },
+
+  // Level 4
+  { id:100, level:4, name:"Air Walk",                desc:"Subject treads on air as if solid (climb at 45-degree angle)." },
+  { id:101, level:4, name:"Control Water",           desc:"Raises or lowers bodies of water." },
+  { id:102, level:4, name:"Cure Critical Wounds",    desc:"Cures 4d8 damage +1/level (max +20)." },
+  { id:103, level:4, name:"Death Ward",              desc:"Grants immunity to death spells and negative energy effects." },
+  { id:104, level:4, name:"Dimensional Anchor",      desc:"Bars extradimensional movement." },
+  { id:105, level:4, name:"Discern Lies",            desc:"Reveals deliberate falsehoods." },
+  { id:106, level:4, name:"Dismissal",               desc:"Forces a creature to return to native plane." },
+  { id:107, level:4, name:"Divination",              desc:"Provides useful advice for specific proposed actions. (M)" },
+  { id:108, level:4, name:"Divine Power",            desc:"You gain attack bonus, +6 to Str, and 1 hp/level." },
+  { id:109, level:4, name:"Freedom of Movement",     desc:"Subject moves normally despite impediments." },
+  { id:110, level:4, name:"Giant Vermin",            desc:"Turns centipedes, scorpions, or spiders into giant vermin." },
+  { id:111, level:4, name:"Imbue with Spell Ability",desc:"Transfer spells to subject." },
+  { id:112, level:4, name:"Inflict Critical Wounds", desc:"Touch attack, 4d8 damage +1/level (max +20)." },
+  { id:113, level:4, name:"Magic Weapon, Greater",   desc:"+1 bonus/four levels (max +5)." },
+  { id:114, level:4, name:"Neutralize Poison",       desc:"Immunizes subject against poison, detoxifies venom in or on subject." },
+  { id:115, level:4, name:"Planar Ally, Lesser",     desc:"Exchange services with a 6 HD extraplanar creature. (XP)" },
+  { id:116, level:4, name:"Poison",                  desc:"Touch deals 1d10 Con damage, repeats in 1 min." },
+  { id:117, level:4, name:"Repel Vermin",            desc:"Insects, spiders, and other vermin stay 10 ft. away." },
+  { id:118, level:4, name:"Restoration",             desc:"Restores level and ability score drains. (M)" },
+  { id:119, level:4, name:"Sending",                 desc:"Delivers short message anywhere, instantly." },
+  { id:120, level:4, name:"Spell Immunity",          desc:"Subject is immune to one spell per four levels." },
+  { id:121, level:4, name:"Summon Monster IV",       desc:"Calls extraplanar creature to fight for you." },
+  { id:122, level:4, name:"Tongues",                 desc:"Speak any language." },
+
+  // Level 5
+  { id:123, level:5, name:"Atonement",                  desc:"Removes burden of misdeeds from subject. (F, XP)" },
+  { id:124, level:5, name:"Break Enchantment",          desc:"Frees subjects from enchantments, alterations, curses, and petrification." },
+  { id:125, level:5, name:"Command, Greater",           desc:"As command, but affects one subject/level." },
+  { id:126, level:5, name:"Commune",                    desc:"Deity answers one yes-or-no question/level. (XP)" },
+  { id:127, level:5, name:"Cure Light Wounds, Mass",    desc:"Cures 1d8 damage +1/level for many creatures." },
+  { id:128, level:5, name:"Dispel Chaos/Evil/Good/Law", desc:"+4 bonus against attacks." },
+  { id:129, level:5, name:"Disrupting Weapon",          desc:"Melee weapon destroys undead." },
+  { id:130, level:5, name:"Flame Strike",               desc:"Smite foes with divine fire (1d6/level damage)." },
+  { id:131, level:5, name:"Hallow",                     desc:"Designates location as holy. (M)" },
+  { id:132, level:5, name:"Inflict Light Wounds, Mass", desc:"Deals 1d8 damage +1/level to many creatures." },
+  { id:133, level:5, name:"Insect Plague",              desc:"Locust swarms attack creatures." },
+  { id:134, level:5, name:"Mark of Justice",            desc:"Designates action that will trigger curse on subject." },
+  { id:135, level:5, name:"Plane Shift",                desc:"As many as eight subjects travel to another plane. (F)" },
+  { id:136, level:5, name:"Raise Dead",                 desc:"Restores life to subject who died as long as one day/level ago. (M)" },
+  { id:137, level:5, name:"Righteous Might",            desc:"Your size increases, and you gain combat bonuses." },
+  { id:138, level:5, name:"Scrying",                    desc:"Spies on subject from a distance. (F)" },
+  { id:139, level:5, name:"Slay Living",                desc:"Touch attack kills subject." },
+  { id:140, level:5, name:"Spell Resistance",           desc:"Subject gains SR 12 + level." },
+  { id:141, level:5, name:"Summon Monster V",           desc:"Calls extraplanar creature to fight for you." },
+  { id:142, level:5, name:"Symbol of Pain",             desc:"Triggered rune wracks nearby creatures with pain. (M)" },
+  { id:143, level:5, name:"Symbol of Sleep",            desc:"Triggered rune puts nearby creatures into catatonic slumber. (M)" },
+  { id:144, level:5, name:"True Seeing",                desc:"Lets you see all things as they really are. (M)" },
+  { id:145, level:5, name:"Unhallow",                   desc:"Designates location as unholy. (M)" },
+  { id:146, level:5, name:"Wall of Stone",              desc:"Creates a stone wall that can be shaped." },
+
+  // Level 6
+  { id:147, level:6, name:"Animate Objects",              desc:"Objects attack your foes." },
+  { id:148, level:6, name:"Antilife Shell",               desc:"10-ft. field hedges out living creatures." },
+  { id:149, level:6, name:"Banishment",                   desc:"Banishes 2 HD/level of extraplanar creatures." },
+  { id:150, level:6, name:"Bear's Endurance, Mass",       desc:"As bear's endurance, affects one subject/level." },
+  { id:151, level:6, name:"Blade Barrier",                desc:"Wall of blades deals 1d6/level damage." },
+  { id:152, level:6, name:"Bull's Strength, Mass",        desc:"As bull's strength, affects one subject/level." },
+  { id:153, level:6, name:"Create Undead",                desc:"Create ghouls, ghasts, mummies, or mohrgs." },
+  { id:154, level:6, name:"Cure Moderate Wounds, Mass",   desc:"Cures 2d8 damage +1/level for many creatures." },
+  { id:155, level:6, name:"Dispel Magic, Greater",        desc:"As dispel magic, but up to +20 on check." },
+  { id:156, level:6, name:"Eagle's Splendor, Mass",       desc:"As eagle's splendor, affects one subject/level." },
+  { id:157, level:6, name:"Find the Path",                desc:"Shows most direct way to a location." },
+  { id:158, level:6, name:"Forbiddance",                  desc:"Blocks planar travel, damages creatures of different alignment. (M)" },
+  { id:159, level:6, name:"Geas/Quest",                   desc:"As lesser geas, plus it affects any creature." },
+  { id:160, level:6, name:"Glyph of Warding, Greater",    desc:"As glyph of warding, but up to 10d8 damage or 6th-level spell." },
+  { id:161, level:6, name:"Harm",                         desc:"Deals 10 points/level damage to target." },
+  { id:162, level:6, name:"Heal",                         desc:"Cures 10 points/level of damage, all diseases and mental conditions." },
+  { id:163, level:6, name:"Heroes' Feast",                desc:"Food for one creature/level cures and grants combat bonuses." },
+  { id:164, level:6, name:"Inflict Moderate Wounds, Mass",desc:"Deals 2d8 damage +1/level to many creatures." },
+  { id:165, level:6, name:"Owl's Wisdom, Mass",           desc:"As owl's wisdom, affects one subject/level." },
+  { id:166, level:6, name:"Planar Ally",                  desc:"As lesser planar ally, but up to 12 HD. (XP)" },
+  { id:167, level:6, name:"Summon Monster VI",            desc:"Calls extraplanar creature to fight for you." },
+  { id:168, level:6, name:"Symbol of Fear",               desc:"Triggered rune panics nearby creatures. (M)" },
+  { id:169, level:6, name:"Symbol of Persuasion",         desc:"Triggered rune charms nearby creatures. (M)" },
+  { id:170, level:6, name:"Undeath to Death",             desc:"Destroys 1d4 HD/level undead (max 20d4). (M)" },
+  { id:171, level:6, name:"Wind Walk",                    desc:"You and your allies turn vaporous and travel fast." },
+  { id:172, level:6, name:"Word of Recall",               desc:"Teleports you back to designated place." },
+
+  // Level 7
+  { id:173, level:7, name:"Blasphemy",                    desc:"Kills, paralyzes, weakens, or dazes nonevil subjects." },
+  { id:174, level:7, name:"Control Weather",              desc:"Changes weather in local area." },
+  { id:175, level:7, name:"Cure Serious Wounds, Mass",    desc:"Cures 3d8 damage +1/level for many creatures." },
+  { id:176, level:7, name:"Destruction",                  desc:"Kills subject and destroys remains. (F)" },
+  { id:177, level:7, name:"Dictum",                       desc:"Kills, paralyzes, slows, or deafens nonlawful subjects." },
+  { id:178, level:7, name:"Ethereal Jaunt",               desc:"You become ethereal for 1 round/level." },
+  { id:179, level:7, name:"Holy Word",                    desc:"Kills, paralyzes, blinds, or deafens nongood subjects." },
+  { id:180, level:7, name:"Inflict Serious Wounds, Mass", desc:"Deals 3d8 damage +1/level to many creatures." },
+  { id:181, level:7, name:"Refuge",                       desc:"Alters item to transport its possessor to you. (M)" },
+  { id:182, level:7, name:"Regenerate",                   desc:"Subject's severed limbs grow back, cures 4d8 damage +1/level (max +35)." },
+  { id:183, level:7, name:"Repulsion",                    desc:"Creatures can't approach you." },
+  { id:184, level:7, name:"Restoration, Greater",         desc:"As restoration, plus restores all levels and ability scores. (XP)" },
+  { id:185, level:7, name:"Resurrection",                 desc:"Fully restore dead subject. (M)" },
+  { id:186, level:7, name:"Scrying, Greater",             desc:"As scrying, but faster and longer." },
+  { id:187, level:7, name:"Summon Monster VII",           desc:"Calls extraplanar creature to fight for you." },
+  { id:188, level:7, name:"Symbol of Stunning",          desc:"Triggered rune stuns nearby creatures. (M)" },
+  { id:189, level:7, name:"Symbol of Weakness",          desc:"Triggered rune weakens nearby creatures. (M)" },
+  { id:190, level:7, name:"Word of Chaos",               desc:"Kills, confuses, stuns, or deafens nonchaotic subjects." },
+
+  // Level 8
+  { id:191, level:8, name:"Antimagic Field",               desc:"Negates magic within 10 ft." },
+  { id:192, level:8, name:"Cloak of Chaos",               desc:"+4 to AC, +4 resistance, and SR 25 against lawful spells. (F)" },
+  { id:193, level:8, name:"Create Greater Undead",         desc:"Create shadows, wraiths, spectres, or devourers. (M)" },
+  { id:194, level:8, name:"Cure Critical Wounds, Mass",    desc:"Cures 4d8 damage +1/level for many creatures." },
+  { id:195, level:8, name:"Dimensional Lock",              desc:"Teleportation and interplanar travel blocked for one day/level." },
+  { id:196, level:8, name:"Discern Location",              desc:"Reveals exact location of creature or object." },
+  { id:197, level:8, name:"Earthquake",                    desc:"Intense tremor shakes 5-ft./level radius." },
+  { id:198, level:8, name:"Fire Storm",                    desc:"Deals 1d6/level fire damage." },
+  { id:199, level:8, name:"Holy Aura",                     desc:"+4 to AC, +4 resistance, and SR 25 against evil spells. (F)" },
+  { id:200, level:8, name:"Planar Ally, Greater",          desc:"As lesser planar ally, but up to 18 HD. (XP)" },
+  { id:201, level:8, name:"Inflict Critical Wounds, Mass", desc:"Deals 4d8 damage +1/level to many creatures." },
+  { id:202, level:8, name:"Shield of Law",                 desc:"+4 to AC, +4 resistance, and SR 25 against chaotic spells. (F)" },
+  { id:203, level:8, name:"Spell Immunity, Greater",       desc:"As spell immunity, but up to 8th-level spells." },
+  { id:204, level:8, name:"Summon Monster VIII",           desc:"Calls extraplanar creature to fight for you." },
+  { id:205, level:8, name:"Symbol of Death",               desc:"Triggered rune slays nearby creatures. (M)" },
+  { id:206, level:8, name:"Symbol of Insanity",            desc:"Triggered rune renders nearby creatures insane. (M)" },
+  { id:207, level:8, name:"Unholy Aura",                   desc:"+4 to AC, +4 resistance, and SR 25 against good spells. (F)" },
+
+  // Level 9
+  { id:208, level:9, name:"Astral Projection",  desc:"Projects you and companions onto Astral Plane. (M)" },
+  { id:209, level:9, name:"Energy Drain",       desc:"Subject gains 2d4 negative levels." },
+  { id:210, level:9, name:"Etherealness",       desc:"Travel to Ethereal Plane with companions." },
+  { id:211, level:9, name:"Gate",               desc:"Connects two planes for travel or summoning. (XP)" },
+  { id:212, level:9, name:"Heal, Mass",         desc:"As heal, but with several subjects." },
+  { id:213, level:9, name:"Implosion",          desc:"Kills one creature/round." },
+  { id:214, level:9, name:"Miracle",            desc:"Requests a deity's intercession. (XP)" },
+  { id:215, level:9, name:"Soul Bind",          desc:"Traps newly dead soul to prevent resurrection. (F)" },
+  { id:216, level:9, name:"Storm of Vengeance", desc:"Storm rains acid, lightning, and hail." },
+  { id:217, level:9, name:"Summon Monster IX",  desc:"Calls extraplanar creature to fight for you." },
+  { id:218, level:9, name:"True Resurrection",  desc:"As resurrection, plus remains aren't needed. (M)" },
+];
+
+const LEVEL_NAMES   = ["Level 0 \u2014 Orisons","Level 1","Level 2","Level 3","Level 4","Level 5","Level 6","Level 7","Level 8","Level 9"];
+const DEFAULT_SLOTS = { 0:5, 1:5, 2:4, 3:4, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0 };
+
+// Pending card animations: spellId -> class name, consumed by renderLeft
+const cardAnims = new Map();
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+
+let state = {
+  slots:           { ...DEFAULT_SLOTS },
+  spells:          [],
+  favorites:       new Set(),
+  collapsed:       new Set(),
+  days:            [],
+  currentDayIndex: 0,
+};
+
+// Which spell is being edited (null = adding new)
+let spellModalEditId = null;
+
+function uid() {
+  return crypto.randomUUID();
+}
+function today()       { return new Date().toISOString().slice(0, 10); }
+function findSpell(id) { return state.spells.find(s => s.id === id); }
+function viewingDay()  { return state.days[state.currentDayIndex]; }
+function currentDay()  { return state.days[state.days.length - 1]; }
+function isViewingCurrent() { return state.currentDayIndex === state.days.length - 1; }
+function nextSpellId() {
+  return state.spells.reduce((max, s) => Math.max(max, s.id), -1) + 1;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SERIALIZATION
+// ═══════════════════════════════════════════════════════════════
+
+function serializeState() {
+  return {
+    version:   1,
+    slots:     state.slots,
+    spells:    state.spells,
+    favorites: [...state.favorites],
+    collapsed: [...state.collapsed],
+    days:      state.days,
+  };
+}
+
+function restoreState(data) {
+  if (!data || typeof data !== 'object') return;
+
+  if (data.slots && typeof data.slots === 'object') {
+    const clean = {};
+    for (let i = 0; i <= 9; i++) {
+      const v = Number(data.slots[i]);
+      clean[i] = (Number.isFinite(v) && v >= 0) ? Math.floor(v) : 0;
+    }
+    state.slots = clean;
+  }
+
+  if (Array.isArray(data.spells)) {
+    state.spells = data.spells.filter(s =>
+      s && typeof s === 'object' &&
+      typeof s.id === 'number' && Number.isFinite(s.id) &&
+      typeof s.level === 'number' && s.level >= 0 && s.level <= 9 &&
+      typeof s.name === 'string'
+    ).map(s => ({
+      id:    s.id,
+      level: s.level,
+      name:  String(s.name).slice(0, 200),
+      desc:  String(s.desc || '').slice(0, 1000),
+    }));
+  }
+
+  if (Array.isArray(data.favorites)) {
+    state.favorites = new Set(data.favorites.filter(f => typeof f === 'number'));
+  }
+  if (Array.isArray(data.collapsed)) {
+    state.collapsed = new Set(data.collapsed.filter(c => typeof c === 'number'));
+  }
+
+  if (Array.isArray(data.days) && data.days.length) {
+    state.days = data.days.filter(d =>
+      d && typeof d === 'object' && Array.isArray(d.prepared)
+    ).map(d => ({
+      id:       d.id,
+      label:    String(d.label || ''),
+      date:     String(d.date || ''),
+      prepared: d.prepared.filter(p =>
+        p && typeof p === 'object' && typeof p.spellId === 'number'
+      ).map(p => ({
+        spellId: p.spellId,
+        used:    !!p.used,
+        iid:     typeof p.iid === 'string' ? p.iid : uid(),
+      })),
+    }));
+  }
+
+  if (state.days.length === 0) {
+    state.days = [{ id: 1, label: 'Day 1', date: today(), prepared: [] }];
+  }
+  state.currentDayIndex = state.days.length - 1;
+}
+
+function initFreshState() {
+  state.spells = DEFAULT_SPELLS.map(s => ({ ...s }));
+  state.days   = [{ id: 1, label: 'Day 1', date: today(), prepared: [] }];
+  state.currentDayIndex = 0;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILE OPERATIONS
+// ═══════════════════════════════════════════════════════════════
+
+function autoSave() {
+  try {
+    localStorage.setItem('dnd-cleric-state', JSON.stringify(serializeState()));
+  } catch(e) {}
+  updateFileStatus();
+}
+
+function saveFile() {
+  closeFileMenu();
+  const json = JSON.stringify(serializeState(), null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'cleric-spells.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function openFile() {
+  closeFileMenu();
+  const input = document.createElement('input');
+  input.type  = 'file';
+  input.accept = '.json,application/json';
+  input.addEventListener('change', async () => {
+    const file = input.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      restoreState(JSON.parse(text));
+      autoSave();
+      render();
+    } catch(e) {
+      alert('Could not load file: ' + e.message);
+    }
+  });
+  input.click();
+}
+
+function updateFileStatus() {
+  document.getElementById('fileStatus').textContent = 'Saved';
+  document.getElementById('fileMenuBtn').style.color = '';
+}
+
+// File menu dropdown
+function toggleFileMenu() {
+  document.getElementById('fileMenu').classList.toggle('open');
+}
+function closeFileMenu() {
+  document.getElementById('fileMenu').classList.remove('open');
+}
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('fileWrap');
+  if (wrap && !wrap.contains(e.target)) closeFileMenu();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// DAY NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+
+function prevDay() {
+  if (state.currentDayIndex > 0) { state.currentDayIndex--; render(); }
+}
+function nextDay() {
+  if (state.currentDayIndex < state.days.length - 1) { state.currentDayIndex++; render(); }
+}
+function deleteDay() {
+  if (state.days.length <= 1) return;
+  const day = state.days[state.currentDayIndex];
+  if (!confirm('Remove "' + day.label + '"? This cannot be undone.')) return;
+  state.days.splice(state.currentDayIndex, 1);
+  if (state.currentDayIndex >= state.days.length) state.currentDayIndex = state.days.length - 1;
+  state.days.forEach((d, i) => { d.id = i + 1; d.label = 'Day ' + (i + 1); });
+  autoSave();
+  render();
+}
+
+function updateDayNav() {
+  const vd  = viewingDay();
+  const tot = state.days.length;
+  document.getElementById('dayLabel').textContent    = vd.label + ' / ' + tot;
+  document.getElementById('btnPrevDay').disabled     = state.currentDayIndex === 0;
+  document.getElementById('btnNextDay').disabled     = state.currentDayIndex === tot - 1;
+  document.getElementById('btnDeleteDay').disabled   = tot <= 1;
+
+  const banner = document.getElementById('pastDayBanner');
+  const rpTitle = document.getElementById('rightPanelTitle');
+  if (!isViewingCurrent()) {
+    banner.textContent = 'Viewing ' + vd.label + ' (' + vd.date + ') \u2014 read-only';
+    banner.classList.add('visible');
+    rpTitle.textContent = vd.label + ' \u2014 Prepared Spells';
+  } else {
+    banner.classList.remove('visible');
+    rpTitle.textContent = "Today\u2019s Prepared Spells";
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NEW DAY
+// ═══════════════════════════════════════════════════════════════
+
+function promptNewDay() {
+  document.getElementById('newDayModal').classList.add('open');
+}
+function closeNewDayModal() {
+  document.getElementById('newDayModal').classList.remove('open');
+}
+function onNewDayModalBg(e) {
+  if (e.target === document.getElementById('newDayModal')) closeNewDayModal();
+}
+
+function startNewDay(mode) {
+  closeNewDayModal();
+  const newId    = state.days.length + 1;
+  const prepared = mode === 'copy'
+    ? currentDay().prepared.map(p => ({ spellId: p.spellId, used: false, iid: uid() }))
+    : [];
+  state.days.push({ id: newId, label: 'Day ' + newId, date: today(), prepared });
+  state.currentDayIndex = state.days.length - 1;
+  autoSave();
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SPELL MANAGEMENT (add / edit / delete)
+// ═══════════════════════════════════════════════════════════════
+
+function openAddSpell(level) {
+  spellModalEditId = null;
+  document.getElementById('spellModalTitle').textContent = 'Add Spell';
+  document.getElementById('modalLevel').value = level >= 0 ? level : 0;
+  document.getElementById('modalName').value  = '';
+  document.getElementById('modalDesc').value  = '';
+  document.getElementById('spellModal').classList.add('open');
+  setTimeout(() => document.getElementById('modalName').focus(), 50);
+}
+
+function openEditSpell(spellId) {
+  const spell = findSpell(spellId);
+  if (!spell) return;
+  spellModalEditId = spellId;
+  document.getElementById('spellModalTitle').textContent = 'Edit Spell';
+  document.getElementById('modalLevel').value = spell.level;
+  document.getElementById('modalName').value  = spell.name;
+  document.getElementById('modalDesc').value  = spell.desc;
+  document.getElementById('spellModal').classList.add('open');
+  setTimeout(() => document.getElementById('modalName').focus(), 50);
+}
+
+function closeSpellModal() {
+  document.getElementById('spellModal').classList.remove('open');
+}
+function onSpellModalBg(e) {
+  if (e.target === document.getElementById('spellModal')) closeSpellModal();
+}
+function onSpellModalKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey && e.target.tagName !== 'TEXTAREA') saveSpell();
+  if (e.key === 'Escape') closeSpellModal();
+}
+
+function saveSpell() {
+  const name  = document.getElementById('modalName').value.trim();
+  const desc  = document.getElementById('modalDesc').value.trim();
+  const level = parseInt(document.getElementById('modalLevel').value, 10);
+  if (!name) { document.getElementById('modalName').focus(); return; }
+  if (isNaN(level) || level < 0 || level > 9) return;
+
+  if (spellModalEditId === null) {
+    state.spells.push({ id: nextSpellId(), level, name, desc });
+  } else {
+    const spell = findSpell(spellModalEditId);
+    if (spell) { spell.name = name; spell.desc = desc; spell.level = level; }
+  }
+  closeSpellModal();
+  autoSave();
+  renderLeft();
+}
+
+function deleteSpell(spellId) {
+  const spell = findSpell(spellId);
+  if (!spell) return;
+  if (!confirm('Delete "' + spell.name + '"?\nIt will be removed from all days.')) return;
+  for (const day of state.days) {
+    day.prepared = day.prepared.filter(p => p.spellId !== spellId);
+  }
+  state.spells   = state.spells.filter(s => s.id !== spellId);
+  state.favorites.delete(spellId);
+  autoSave();
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SPELL PREPARATION (current day only)
+// ═══════════════════════════════════════════════════════════════
+
+function preparedForLevel(level) {
+  return viewingDay().prepared.filter(p => findSpell(p.spellId)?.level === level);
+}
+function isFull(level) {
+  return currentDay().prepared.filter(p => findSpell(p.spellId)?.level === level).length >= slotMax(level);
+}
+function slotMax(level)   { return state.slots[level] ?? 0; }
+function countOf(spellId) { return currentDay().prepared.filter(p => p.spellId === spellId).length; }
+
+function addSpell(spellId) {
+  if (!isViewingCurrent()) return;
+  const spell = findSpell(spellId);
+  if (!spell || isFull(spell.level)) return;
+  const alreadyPrepared = countOf(spellId) > 0;
+  cardAnims.set(spellId, alreadyPrepared ? 'anim-bounce' : 'anim-flip-in');
+  currentDay().prepared.push({ spellId, used: false, iid: uid() });
+  autoSave();
+  render();
+}
+
+function removeInstance(iid) {
+  if (!isViewingCurrent()) return;
+  const inst = currentDay().prepared.find(p => p.iid === iid);
+  if (inst && currentDay().prepared.filter(p => p.spellId === inst.spellId).length === 1) {
+    cardAnims.set(inst.spellId, 'anim-flip-out');
+  }
+  currentDay().prepared = currentDay().prepared.filter(p => p.iid !== iid);
+  autoSave();
+  render();
+}
+
+function removeOneInstance(spellId) {
+  if (!isViewingCurrent()) return;
+  const prepared = currentDay().prepared;
+  if (prepared.filter(p => p.spellId === spellId).length === 1) {
+    cardAnims.set(spellId, 'anim-flip-out');
+  }
+  for (let i = prepared.length - 1; i >= 0; i--) {
+    if (prepared[i].spellId === spellId) { prepared.splice(i, 1); break; }
+  }
+  autoSave();
+  render();
+}
+
+function toggleUsed(iid) {
+  if (!isViewingCurrent()) return;
+  const p = currentDay().prepared.find(p => p.iid === iid);
+  if (p) { p.used = !p.used; autoSave(); render(); }
+}
+
+function toggleFav(spellId) {
+  if (state.favorites.has(spellId)) state.favorites.delete(spellId);
+  else state.favorites.add(spellId);
+  autoSave();
+  renderLeft();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════════
+
+function openSettings() {
+  const form = document.getElementById('slotForm');
+  form.innerHTML = '';
+  for (let i = 0; i <= 9; i++) {
+    const row = document.createElement('div');
+    row.className = 'slot-row';
+    row.innerHTML = `<label for="s${i}">${LEVEL_NAMES[i]}</label>
+      <input type="number" id="s${i}" min="0" max="30" value="${state.slots[i] ?? 0}">`;
+    form.appendChild(row);
+  }
+  document.getElementById('overlay').classList.add('open');
+}
+function closeSettings() { document.getElementById('overlay').classList.remove('open'); }
+function onOverlayClick(e) { if (e.target === document.getElementById('overlay')) closeSettings(); }
+
+function saveSettings() {
+  for (let i = 0; i <= 9; i++) {
+    const v = parseInt(document.getElementById('s' + i).value, 10);
+    state.slots[i] = isNaN(v) ? 0 : Math.max(0, v);
+  }
+  const tally = {};
+  for (let i = 0; i <= 9; i++) tally[i] = 0;
+  currentDay().prepared = currentDay().prepared.filter(p => {
+    const lvl = findSpell(p.spellId)?.level ?? -1;
+    if (lvl < 0) return false;
+    if (tally[lvl] < state.slots[lvl]) { tally[lvl]++; return true; }
+    return false;
+  });
+  autoSave();
+  closeSettings();
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════════
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveFile(); }
+  if (e.ctrlKey && e.key === 'o') { e.preventDefault(); openFile(); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — LEFT PANEL
+// ═══════════════════════════════════════════════════════════════
+
+function renderLeft() {
+  const panel = document.getElementById('leftPanel');
+  const q     = document.getElementById('searchInput').value.trim().toLowerCase();
+  panel.innerHTML = '';
+
+  const isCurrent = isViewingCurrent();
+
+  for (let lvl = 0; lvl <= 9; lvl++) {
+    let spells = state.spells.filter(s => s.level === lvl);
+    if (q) spells = spells.filter(s => s.name.toLowerCase().includes(q));
+
+    const max = slotMax(lvl);
+    if (!q && spells.length === 0 && max === 0) continue;
+    if (q && spells.length === 0) continue;
+
+    spells.sort((a, b) => {
+      const af = state.favorites.has(a.id) ? 0 : 1;
+      const bf = state.favorites.has(b.id) ? 0 : 1;
+      return af - bf || a.name.localeCompare(b.name);
+    });
+
+    const prepCount = preparedForLevel(lvl).length;
+    const full      = isCurrent && prepCount >= max && max > 0;
+
+    let ctrClass = '';
+    if (prepCount > 0 && prepCount < max) ctrClass = 'has-prepared';
+    if (full)                             ctrClass = 'slot-full';
+    if (isCurrent && prepCount === max && max > 0) ctrClass = 'slot-complete';
+
+    const isCollapsed = state.collapsed.has(lvl);
+    const section     = document.createElement('div');
+    section.className = 'level-section' + (isCollapsed ? ' collapsed' : '');
+
+    const hdr = document.createElement('div');
+    hdr.className = 'level-header';
+    hdr.innerHTML = `
+      <span class="level-name">${LEVEL_NAMES[lvl]}</span>
+      <span class="slot-counter ${ctrClass}">${prepCount}&thinsp;/&thinsp;${max}</span>
+      <span class="caret">&#9660;</span>`;
+    hdr.addEventListener('click', () => {
+      if (state.collapsed.has(lvl)) state.collapsed.delete(lvl);
+      else state.collapsed.add(lvl);
+      autoSave(); renderLeft();
+    });
+
+    const grid = document.createElement('div');
+    grid.className = 'spells-grid';
+
+    for (const spell of spells) {
+      const cnt      = isCurrent ? countOf(spell.id) : 0;
+      const isFav    = state.favorites.has(spell.id);
+      const slotFull = isCurrent && full && cnt === 0;
+
+      const card = document.createElement('div');
+      card.className = 'spell-card' +
+        (cnt > 0    ? ' is-prepared'    : '') +
+        (slotFull   ? ' slot-full-card' : '');
+      card.dataset.level   = lvl;
+      card.dataset.spellId = spell.id;
+      card.title = slotFull
+        ? 'No spell slots remaining for this level'
+        : isCurrent ? `Click to prepare ${spell.name}${cnt > 0 ? ' (again)' : ''}` : '';
+
+      card.innerHTML = `
+        <div class="card-actions">
+          <button class="btn-card-action btn-card-edit"   title="Edit spell">&#9998;</button>
+          <button class="btn-card-action btn-card-delete" title="Delete spell">&#10005;</button>
+        </div>
+        <div class="spell-card-name">${escHtml(spell.name)}</div>
+        <div class="spell-card-desc">${escHtml(spell.desc)}</div>
+        <div class="card-badges">
+          <span class="badge-fav${isFav ? ' fav-active' : ''}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">&#9733;</span>
+          ${cnt > 0 ? `<span class="badge-count">${cnt}</span><button class="btn-badge-remove" title="Remove one prepared">&#10005;</button>` : ''}
+        </div>`;
+
+      card.querySelector('.badge-fav').addEventListener('click', ev => {
+        ev.stopPropagation(); toggleFav(spell.id);
+      });
+      card.querySelector('.btn-card-edit').addEventListener('click', ev => {
+        ev.stopPropagation(); openEditSpell(spell.id);
+      });
+      card.querySelector('.btn-card-delete').addEventListener('click', ev => {
+        ev.stopPropagation(); deleteSpell(spell.id);
+      });
+      if (cnt > 0) {
+        card.querySelector('.btn-badge-remove').addEventListener('click', ev => {
+          ev.stopPropagation(); removeOneInstance(spell.id);
+        });
+      }
+
+      if (isCurrent && !slotFull) {
+        card.addEventListener('click', () => addSpell(spell.id));
+      }
+
+      grid.appendChild(card);
+
+      if (cardAnims.has(spell.id)) {
+        const cls = cardAnims.get(spell.id);
+        cardAnims.delete(spell.id);
+        requestAnimationFrame(() => {
+          card.classList.add(cls);
+          card.addEventListener('animationend', () => card.classList.remove(cls), { once: true });
+        });
+      }
+    }
+
+    // "+ Add Spell" row at bottom of each level section
+    const addRow = document.createElement('div');
+    addRow.className = 'add-spell-row';
+    const addBtn = document.createElement('button');
+    addBtn.className   = 'btn-add-spell';
+    addBtn.textContent = '+ Add Spell at this level';
+    addBtn.addEventListener('click', () => openAddSpell(lvl));
+    addRow.appendChild(addBtn);
+
+    section.appendChild(hdr);
+    section.appendChild(grid);
+    section.appendChild(addRow);
+    panel.appendChild(section);
+  }
+
+  if (panel.children.length === 0) {
+    panel.innerHTML = q
+      ? '<p class="empty-msg">No spells match your search.</p>'
+      : '<p class="empty-msg">No spells yet.<br>Use &ldquo;+ Add Spell&rdquo; to get started.</p>';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — RIGHT PANEL
+// ═══════════════════════════════════════════════════════════════
+
+function renderRight() {
+  const panel    = document.getElementById('rightPanel');
+  const readOnly = !isViewingCurrent();
+  panel.innerHTML = '';
+  let hasAny = false;
+
+  for (let lvl = 0; lvl <= 9; lvl++) {
+    const instances = preparedForLevel(lvl);
+    if (instances.length === 0) continue;
+    hasAny = true;
+
+    const max    = slotMax(lvl);
+    const block  = document.createElement('div');
+    block.className = 'prep-level-block';
+
+    const lhdr = document.createElement('div');
+    lhdr.className = 'prep-level-header';
+    let badgeClass = '';
+    if (instances.length === max && max > 0) badgeClass = 'complete';
+    if (instances.length > max)              badgeClass = 'full';
+    lhdr.innerHTML = `
+      <span class="prep-level-name">${LEVEL_NAMES[lvl]}</span>
+      <span class="prep-slot-badge ${badgeClass}">${instances.length}&thinsp;/&thinsp;${max}</span>`;
+    block.appendChild(lhdr);
+
+    for (const inst of instances) {
+      const spell = findSpell(inst.spellId);
+      if (!spell) continue;
+
+      const item = document.createElement('div');
+      item.className = 'prep-item' +
+        (inst.used ? ' is-used' : '') +
+        (readOnly  ? ' read-only' : '');
+      item.dataset.spellId = spell.id;
+
+      item.innerHTML = `
+        <span class="prep-item-name">${escHtml(spell.name)}</span>
+        <span class="prep-item-status">${inst.used ? '&#10003;' : '&ndash;'}</span>
+        <div class="prep-item-controls">
+          <button class="btn-micro use-btn${inst.used ? ' active' : ''}"
+                  title="${inst.used ? 'Mark as uncast' : 'Mark as cast'}">&#10003;</button>
+          <button class="btn-micro remove-btn" title="Remove from prepared">&#10005;</button>
+        </div>`;
+
+      if (!readOnly) {
+        item.querySelector('.use-btn').addEventListener('click',    () => toggleUsed(inst.iid));
+        item.querySelector('.remove-btn').addEventListener('click', () => removeInstance(inst.iid));
+      }
+
+      block.appendChild(item);
+    }
+
+    panel.appendChild(block);
+  }
+
+  if (!hasAny) {
+    panel.innerHTML = readOnly
+      ? '<p class="empty-msg">No spells were prepared on this day.</p>'
+      : '<p class="empty-msg">No spells prepared yet.<br>Click spells on the left to prepare them.</p>';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER (combined)
+// ═══════════════════════════════════════════════════════════════
+
+function render() {
+  updateDayNav();
+  renderLeft();
+  renderRight();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DIVIDER DRAG
+// ═══════════════════════════════════════════════════════════════
+
+(function() {
+  const divider  = document.getElementById('divider');
+  const panelLeft = document.querySelector('.panel-left');
+  const main      = document.querySelector('.main');
+  let dragging = false;
+
+  divider.addEventListener('mousedown', e => {
+    dragging = true;
+    divider.classList.add('dragging');
+    document.body.style.cursor     = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const rect = main.getBoundingClientRect();
+    const w = Math.max(180, Math.min(e.clientX - rect.left, rect.width - 180));
+    panelLeft.style.width = w + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    divider.classList.remove('dragging');
+    document.body.style.cursor     = '';
+    document.body.style.userSelect = '';
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+
+function mergeDefaultSpells() {
+  const existing = new Set(state.spells.map(s => s.id));
+  for (const s of DEFAULT_SPELLS) {
+    if (!existing.has(s.id)) state.spells.push({ ...s });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SPELL TOOLTIP (prepared list hover)
+// ═══════════════════════════════════════════════════════════════
+
+(function initTooltip() {
+  const tip     = document.getElementById('spellTooltip');
+  const tipDesc = tip.querySelector('.tooltip-desc');
+  let activeId = null;
+  const OFFSET_X = 18, OFFSET_Y = 12;
+
+  function moveTip(mx, my) {
+    const tw = tip.offsetWidth  || 300;
+    const th = tip.offsetHeight || 140;
+    let x = mx + OFFSET_X;
+    let y = my + OFFSET_Y;
+    if (x + tw > window.innerWidth  - 8) x = mx - tw - OFFSET_X;
+    if (y + th > window.innerHeight - 8) y = my - th - OFFSET_Y;
+    if (x < 8) x = 8;
+    if (y < 8) y = 8;
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  }
+
+  function hide() {
+    activeId = null;
+    tip.classList.remove('visible');
+  }
+
+  const rightPanel = document.getElementById('rightPanel');
+
+  document.addEventListener('mousemove', e => {
+    const item = e.target.closest('.prep-item[data-spell-id]');
+    const id   = item ? +item.dataset.spellId : null;
+
+    if (id !== activeId) {
+      if (id === null) {
+        hide();
+      } else {
+        const spell = state.spells.find(s => s.id === id);
+        if (spell) {
+          activeId = id;
+          tipDesc.textContent = spell.desc;
+          tip.classList.add('visible');
+        }
+      }
+    }
+
+    if (activeId !== null) moveTip(e.clientX, e.clientY);
+  }, { passive: true });
+
+  rightPanel.addEventListener('mouseleave', () => hide());
+  rightPanel.addEventListener('scroll',     () => hide(), { passive: true });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// CLICK BURST
+// ═══════════════════════════════════════════════════════════════
+
+document.addEventListener('mousedown', e => {
+  const btn = e.target.closest(
+    '.btn, .day-nav-btn, .btn-add-global, .btn-micro, .btn-add-spell, .btn-card-action'
+  );
+  if (!btn || btn.disabled) return;
+  btn.classList.remove('click-burst');
+  void btn.offsetWidth;
+  btn.classList.add('click-burst');
+  btn.addEventListener('animationend', () => btn.classList.remove('click-burst'), { once: true });
+});
+
+function createSnow() {
+  const COUNT = 65;
+  for (let i = 0; i < COUNT; i++) {
+    const el  = document.createElement('div');
+    el.className = 'snowflake';
+    const size    = Math.random() * 3.5 + 1.5;
+    const dur     = Math.random() * 10 + 8;
+    const sway    = Math.random() * 5  + 4;
+    const drift   = (Math.random() - 0.5) * 100;
+    const opacity = Math.random() * 0.45 + 0.2;
+    const delay   = -(Math.random() * dur);
+    el.style.cssText =
+      `left:${Math.random()*100}vw;` +
+      `width:${size}px;height:${size}px;` +
+      `--snow-dur:${dur}s;--snow-sway:${sway}s;` +
+      `--snow-delay:${delay}s;` +
+      `--snow-drift:${drift}px;--snow-opacity:${opacity};`;
+    document.body.appendChild(el);
+  }
+}
+
+function init() {
+  const saved = localStorage.getItem('dnd-cleric-state');
+  if (saved) {
+    try { restoreState(JSON.parse(saved)); }
+    catch(e) { initFreshState(); }
+  } else {
+    initFreshState();
+  }
+  mergeDefaultSpells();
+  updateFileStatus();
+  render();
+  createSnow();
+}
+
+init();
+</script>
+</body>
+</html>
