@@ -14,7 +14,7 @@ Note: Domain spells feature missing for now
 
 ## Disclaimer
 
-This project was entirely vibe-coded. There is no architecture. There are no tests. There is only vibes. It works until it doesn't, and when it doesn't, that's a feature. Use at your own risk — and may your saving throws be high.
+This project was designed by me but since it's vibe-coded I'm not taking any credit for the code itself.
 
 ## Legal
 
