@@ -538,6 +538,7 @@
       overflow:      hidden;
       box-shadow:    inset 0 1px 0 rgba(200,180,100,0.07), 0 2px 6px rgba(0,0,0,0.5);
       transition:    transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      contain:       content;
     }
     .spell-card:hover {
       background:   linear-gradient(165deg, #221a10 0%, #18120a 100%);
@@ -720,6 +721,7 @@
       margin-bottom: 5px;
       box-shadow:    inset 0 1px 0 rgba(200,180,100,0.05), 0 1px 4px rgba(0,0,0,0.45);
       transition:    transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, opacity 0.15s;
+      contain:       content;
     }
     .prep-item.is-used { opacity: 0.45; }
     .prep-item:not(.is-used):not(.read-only):hover {
@@ -789,17 +791,6 @@
        ANIMATIONS & PARTICLE EFFECTS
        ══════════════════════════════════════════════════════════ */
 
-    @keyframes snowfall {
-      0%   { transform: translateY(-20px) translateX(0px);                  opacity: 0; }
-      8%   { opacity: var(--snow-opacity, 0.5); }
-      92%  { opacity: var(--snow-opacity, 0.5); }
-      100% { transform: translateY(102vh) translateX(var(--snow-drift,0px)); opacity: 0; }
-    }
-    @keyframes snow-sway {
-      0%, 100% { margin-left: 0; }
-      25%       { margin-left: 12px; }
-      75%       { margin-left: -12px; }
-    }
     @keyframes btn-shimmer {
       0%   { left: -80%; }
       100% { left: 160%; }
@@ -820,20 +811,6 @@
       0%   { transform: rotate(0deg);   opacity: 0.35; }
       50%  { transform: rotate(180deg); opacity: 0.7; }
       100% { transform: rotate(360deg); opacity: 0.35; }
-    }
-
-    /* ── SNOWFLAKES ── */
-    .snowflake {
-      position:       fixed;
-      top:            -16px;
-      border-radius:  50%;
-      background:     radial-gradient(circle, rgba(255,250,240,0.95) 0%, rgba(255,238,200,0.6) 100%);
-      pointer-events: none;
-      z-index:        5;
-      animation:
-        snowfall  var(--snow-dur,10s) var(--snow-delay,0s) linear   infinite,
-        snow-sway var(--snow-sway,6s) var(--snow-delay,0s) ease-in-out infinite;
-      box-shadow: 0 0 4px rgba(255,240,200,0.55);
     }
 
     /* ── HEADER TITLE: slow gold pulse ── */
@@ -891,7 +868,7 @@
     .spell-card:not(.is-prepared):not(.slot-full-card):hover::before { animation: card-shimmer 0.65s ease-out forwards; }
     .spell-card:hover::after { color: rgba(200,168,75,0.65); transform: rotate(45deg); }
 
-    .spell-card.is-prepared           { animation: pulse-prepared 3.5s ease-in-out infinite; }
+    .spell-card.is-prepared           { animation: pulse-prepared 3.5s ease-in-out infinite; will-change: box-shadow; }
     .spell-card.is-prepared::after    { color: rgba(76,174,76,0.55); }
     .spell-card.is-prepared:hover::after { animation: rune-spin 1.2s linear infinite; }
 
@@ -902,19 +879,19 @@
        ══════════════════════════════════════════════════════════ */
 
     @keyframes click-burst {
-      0%   { outline: 0px solid rgba(220,180,75,0.9); outline-offset: 0;    filter: brightness(1.6); }
-      25%  { filter: brightness(1); }
-      100% { outline: 10px solid rgba(220,180,75,0);  outline-offset: 10px; filter: brightness(1); }
+      0%   { outline: 0px solid rgba(220,180,75,0.9); outline-offset: 0;    opacity: 0.7; }
+      25%  { opacity: 1; }
+      100% { outline: 10px solid rgba(220,180,75,0);  outline-offset: 10px; opacity: 1; }
     }
     @keyframes click-burst-gold {
-      0%   { outline: 0px solid rgba(220,180,75,0.9); outline-offset: 0;    filter: brightness(1.6); }
-      25%  { filter: brightness(1); }
-      100% { outline: 10px solid rgba(220,180,75,0);  outline-offset: 10px; filter: brightness(1); }
+      0%   { outline: 0px solid rgba(220,180,75,0.9); outline-offset: 0;    opacity: 0.7; }
+      25%  { opacity: 1; }
+      100% { outline: 10px solid rgba(220,180,75,0);  outline-offset: 10px; opacity: 1; }
     }
     @keyframes click-burst-red {
-      0%   { outline: 0px solid rgba(208,64,64,0.9); outline-offset: 0;    filter: brightness(1.5); }
-      25%  { filter: brightness(1); }
-      100% { outline: 10px solid rgba(208,64,64,0);  outline-offset: 10px; filter: brightness(1); }
+      0%   { outline: 0px solid rgba(208,64,64,0.9); outline-offset: 0;    opacity: 0.75; }
+      25%  { opacity: 1; }
+      100% { outline: 10px solid rgba(208,64,64,0);  outline-offset: 10px; opacity: 1; }
     }
     .click-burst                       { animation: click-burst      0.45s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
     .btn-primary.click-burst           { animation: click-burst-gold 0.45s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
@@ -956,14 +933,14 @@
     /* ── SPELL CARD ANIMATIONS ── */
 
     @keyframes card-flip-in {
-      0%   { transform: perspective(500px) rotateY(180deg); filter: brightness(0.5); }
-      45%  { transform: perspective(500px) rotateY(90deg);  filter: brightness(1.7); }
-      100% { transform: perspective(500px) rotateY(0deg);   filter: brightness(1);   }
+      0%   { transform: perspective(500px) rotateY(180deg); opacity: 0.5; }
+      45%  { transform: perspective(500px) rotateY(90deg);  opacity: 1;   }
+      100% { transform: perspective(500px) rotateY(0deg);   opacity: 1;   }
     }
     @keyframes card-flip-out {
-      0%   { transform: perspective(500px) rotateY(-180deg); filter: brightness(0.5); }
-      45%  { transform: perspective(500px) rotateY(-90deg);  filter: brightness(1.7); }
-      100% { transform: perspective(500px) rotateY(0deg);    filter: brightness(1);   }
+      0%   { transform: perspective(500px) rotateY(-180deg); opacity: 0.5; }
+      45%  { transform: perspective(500px) rotateY(-90deg);  opacity: 1;   }
+      100% { transform: perspective(500px) rotateY(0deg);    opacity: 1;   }
     }
     @keyframes card-bounce {
       0%   { transform: translateY(0);     }
@@ -975,6 +952,11 @@
     .spell-card.anim-flip-in  { animation: card-flip-in  0.6s ease-out forwards; }
     .spell-card.anim-flip-out { animation: card-flip-out 0.6s ease-out forwards; }
     .spell-card.anim-bounce   { animation: card-bounce   0.35s ease-out forwards; }
+
+    /* ── PAUSE ANIMATIONS WHEN TAB IS HIDDEN ── */
+    .page-hidden *, .page-hidden *::before, .page-hidden *::after {
+      animation-play-state: paused !important;
+    }
   </style>
 </head>
 <body>
@@ -1089,7 +1071,7 @@
     <div class="panel-bar">
       <span class="panel-title">Available Spells</span>
       <button class="btn-add-global" onclick="openAddSpell(-1)" title="Add a spell at any level">+ Add Spell</button>
-      <input class="search-input" id="searchInput" type="text" placeholder="Search&hellip;" oninput="renderLeft()">
+      <input class="search-input" id="searchInput" type="text" placeholder="Search&hellip;" oninput="scheduleRenderLeft()">
     </div>
     <div class="spells-scroll" id="leftPanel"></div>
   </div>
@@ -1390,11 +1372,17 @@ let state = {
 // Which spell is being edited (null = adding new)
 let spellModalEditId = null;
 
+// O(1) spell lookup map — rebuilt whenever state.spells changes
+let spellMap = new Map();
+function rebuildSpellMap() {
+  spellMap = new Map(state.spells.map(s => [s.id, s]));
+}
+
 function uid() {
   return crypto.randomUUID();
 }
 function today()       { return new Date().toISOString().slice(0, 10); }
-function findSpell(id) { return state.spells.find(s => s.id === id); }
+function findSpell(id) { return spellMap.get(id); }
 function viewingDay()  { return state.days[state.currentDayIndex]; }
 function currentDay()  { return state.days[state.days.length - 1]; }
 function isViewingCurrent() { return state.currentDayIndex === state.days.length - 1; }
@@ -1441,6 +1429,7 @@ function restoreState(data) {
       name:  String(s.name).slice(0, 200),
       desc:  String(s.desc || '').slice(0, 1000),
     }));
+    rebuildSpellMap();
   }
 
   if (Array.isArray(data.favorites)) {
@@ -1475,6 +1464,7 @@ function restoreState(data) {
 
 function initFreshState() {
   state.spells = DEFAULT_SPELLS.map(s => ({ ...s }));
+  rebuildSpellMap();
   state.days   = [{ id: 1, label: 'Day 1', date: today(), prepared: [] }];
   state.currentDayIndex = 0;
 }
@@ -1483,11 +1473,15 @@ function initFreshState() {
 // FILE OPERATIONS
 // ═══════════════════════════════════════════════════════════════
 
+let autoSaveTimer = 0;
 function autoSave() {
-  try {
-    localStorage.setItem('dnd-cleric-state', JSON.stringify(serializeState()));
-  } catch(e) {}
-  updateFileStatus();
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem('dnd-cleric-state', JSON.stringify(serializeState()));
+    } catch(e) {}
+    updateFileStatus();
+  }, 400);
 }
 
 function saveFile() {
@@ -1651,7 +1645,9 @@ function saveSpell() {
   if (isNaN(level) || level < 0 || level > 9) return;
 
   if (spellModalEditId === null) {
-    state.spells.push({ id: nextSpellId(), level, name, desc });
+    const newSpell = { id: nextSpellId(), level, name, desc };
+    state.spells.push(newSpell);
+    spellMap.set(newSpell.id, newSpell);
   } else {
     const spell = findSpell(spellModalEditId);
     if (spell) { spell.name = name; spell.desc = desc; spell.level = level; }
@@ -1668,7 +1664,8 @@ function deleteSpell(spellId) {
   for (const day of state.days) {
     day.prepared = day.prepared.filter(p => p.spellId !== spellId);
   }
-  state.spells   = state.spells.filter(s => s.id !== spellId);
+  state.spells = state.spells.filter(s => s.id !== spellId);
+  spellMap.delete(spellId);
   state.favorites.delete(spellId);
   autoSave();
   render();
@@ -1785,10 +1782,17 @@ document.addEventListener('keydown', e => {
 // RENDER — LEFT PANEL
 // ═══════════════════════════════════════════════════════════════
 
-function renderLeft() {
+let searchTimer = 0;
+function scheduleRenderLeft() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => renderLeft(), 150);
+}
+
+function renderLeft(maps) {
+  if (!maps) maps = buildPrepMaps();
   const panel = document.getElementById('leftPanel');
   const q     = document.getElementById('searchInput').value.trim().toLowerCase();
-  panel.innerHTML = '';
+  const frag  = document.createDocumentFragment();
 
   const isCurrent = isViewingCurrent();
 
@@ -1806,7 +1810,7 @@ function renderLeft() {
       return af - bf || a.name.localeCompare(b.name);
     });
 
-    const prepCount = preparedForLevel(lvl).length;
+    const prepCount = (maps.prepByLevel.get(lvl) || []).length;
     const full      = isCurrent && prepCount >= max && max > 0;
 
     let ctrClass = '';
@@ -1820,21 +1824,16 @@ function renderLeft() {
 
     const hdr = document.createElement('div');
     hdr.className = 'level-header';
+    hdr.dataset.level = lvl;
     hdr.innerHTML = `
       <span class="level-name">${LEVEL_NAMES[lvl]}</span>
       <span class="slot-counter ${ctrClass}">${prepCount}&thinsp;/&thinsp;${max}</span>
       <span class="caret">&#9660;</span>`;
-    hdr.addEventListener('click', () => {
-      if (state.collapsed.has(lvl)) state.collapsed.delete(lvl);
-      else state.collapsed.add(lvl);
-      autoSave(); renderLeft();
-    });
-
     const grid = document.createElement('div');
     grid.className = 'spells-grid';
 
     for (const spell of spells) {
-      const cnt      = isCurrent ? countOf(spell.id) : 0;
+      const cnt      = isCurrent ? (maps.countBySpellId.get(spell.id) || 0) : 0;
       const isFav    = state.favorites.has(spell.id);
       const slotFull = isCurrent && full && cnt === 0;
 
@@ -1857,27 +1856,9 @@ function renderLeft() {
         <div class="spell-card-desc">${escHtml(spell.desc)}</div>
         <div class="card-badges">
           <span class="badge-fav${isFav ? ' fav-active' : ''}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">&#9733;</span>
-          ${cnt > 0 ? `<span class="badge-count">${cnt}</span><button class="btn-badge-remove" title="Remove one prepared">&#10005;</button>` : ''}
+          <span class="badge-count" style="${cnt > 0 ? '' : 'visibility:hidden'}">${cnt || 1}</span>
+          <button class="btn-badge-remove" style="${cnt > 0 ? '' : 'visibility:hidden'}" title="Remove one prepared">&#10005;</button>
         </div>`;
-
-      card.querySelector('.badge-fav').addEventListener('click', ev => {
-        ev.stopPropagation(); toggleFav(spell.id);
-      });
-      card.querySelector('.btn-card-edit').addEventListener('click', ev => {
-        ev.stopPropagation(); openEditSpell(spell.id);
-      });
-      card.querySelector('.btn-card-delete').addEventListener('click', ev => {
-        ev.stopPropagation(); deleteSpell(spell.id);
-      });
-      if (cnt > 0) {
-        card.querySelector('.btn-badge-remove').addEventListener('click', ev => {
-          ev.stopPropagation(); removeOneInstance(spell.id);
-        });
-      }
-
-      if (isCurrent && !slotFull) {
-        card.addEventListener('click', () => addSpell(spell.id));
-      }
 
       grid.appendChild(card);
 
@@ -1896,35 +1877,39 @@ function renderLeft() {
     addRow.className = 'add-spell-row';
     const addBtn = document.createElement('button');
     addBtn.className   = 'btn-add-spell';
+    addBtn.dataset.level = lvl;
     addBtn.textContent = '+ Add Spell at this level';
-    addBtn.addEventListener('click', () => openAddSpell(lvl));
     addRow.appendChild(addBtn);
 
     section.appendChild(hdr);
     section.appendChild(grid);
     section.appendChild(addRow);
-    panel.appendChild(section);
+    frag.appendChild(section);
   }
 
-  if (panel.children.length === 0) {
-    panel.innerHTML = q
-      ? '<p class="empty-msg">No spells match your search.</p>'
-      : '<p class="empty-msg">No spells yet.<br>Use &ldquo;+ Add Spell&rdquo; to get started.</p>';
+  if (frag.children.length === 0) {
+    const msg = document.createElement('p');
+    msg.className = 'empty-msg';
+    msg.innerHTML = q
+      ? 'No spells match your search.'
+      : 'No spells yet.<br>Use &ldquo;+ Add Spell&rdquo; to get started.';
+    frag.appendChild(msg);
   }
+  panel.replaceChildren(frag);
 }
 
 // ═══════════════════════════════════════════════════════════════
 // RENDER — RIGHT PANEL
 // ═══════════════════════════════════════════════════════════════
 
-function renderRight() {
+function renderRight(maps) {
   const panel    = document.getElementById('rightPanel');
   const readOnly = !isViewingCurrent();
-  panel.innerHTML = '';
+  const frag     = document.createDocumentFragment();
   let hasAny = false;
 
   for (let lvl = 0; lvl <= 9; lvl++) {
-    const instances = preparedForLevel(lvl);
+    const instances = maps.prepByLevel.get(lvl) || [];
     if (instances.length === 0) continue;
     hasAny = true;
 
@@ -1951,6 +1936,7 @@ function renderRight() {
         (inst.used ? ' is-used' : '') +
         (readOnly  ? ' read-only' : '');
       item.dataset.spellId = spell.id;
+      item.dataset.iid     = inst.iid;
 
       item.innerHTML = `
         <span class="prep-item-name">${escHtml(spell.name)}</span>
@@ -1961,42 +1947,58 @@ function renderRight() {
           <button class="btn-micro remove-btn" title="Remove from prepared">&#10005;</button>
         </div>`;
 
-      if (!readOnly) {
-        item.querySelector('.use-btn').addEventListener('click',    () => toggleUsed(inst.iid));
-        item.querySelector('.remove-btn').addEventListener('click', () => removeInstance(inst.iid));
-      }
-
       block.appendChild(item);
     }
 
-    panel.appendChild(block);
+    frag.appendChild(block);
   }
 
   if (!hasAny) {
-    panel.innerHTML = readOnly
-      ? '<p class="empty-msg">No spells were prepared on this day.</p>'
-      : '<p class="empty-msg">No spells prepared yet.<br>Click spells on the left to prepare them.</p>';
+    const msg = document.createElement('p');
+    msg.className = 'empty-msg';
+    msg.innerHTML = readOnly
+      ? 'No spells were prepared on this day.'
+      : 'No spells prepared yet.<br>Click spells on the left to prepare them.';
+    frag.appendChild(msg);
   }
+  panel.replaceChildren(frag);
 }
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
 
+const ESC_MAP = { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' };
 function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return str.replace(/[&<>"]/g, c => ESC_MAP[c]);
 }
 
 // ═══════════════════════════════════════════════════════════════
 // RENDER (combined)
 // ═══════════════════════════════════════════════════════════════
 
-function render() {
-  updateDayNav();
-  renderLeft();
-  renderRight();
+function buildPrepMaps() {
+  const day = viewingDay();
+  const countBySpellId = new Map();
+  const prepByLevel    = new Map();
+  for (const p of day.prepared) {
+    countBySpellId.set(p.spellId, (countBySpellId.get(p.spellId) || 0) + 1);
+    const spell = findSpell(p.spellId);
+    if (spell) {
+      const lvl = spell.level;
+      if (!prepByLevel.has(lvl)) prepByLevel.set(lvl, []);
+      prepByLevel.get(lvl).push(p);
+    }
+  }
+  return { countBySpellId, prepByLevel };
 }
 
+function render() {
+  updateDayNav();
+  const maps = buildPrepMaps();
+  renderLeft(maps);
+  renderRight(maps);
+}
 // ═══════════════════════════════════════════════════════════════
 // DIVIDER DRAG
 // ═══════════════════════════════════════════════════════════════
@@ -2015,11 +2017,16 @@ function render() {
     e.preventDefault();
   });
 
+  let dragRAF = 0;
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
-    const rect = main.getBoundingClientRect();
-    const w = Math.max(180, Math.min(e.clientX - rect.left, rect.width - 180));
-    panelLeft.style.width = w + 'px';
+    if (dragRAF) return;
+    dragRAF = requestAnimationFrame(() => {
+      dragRAF = 0;
+      const rect = main.getBoundingClientRect();
+      const w = Math.max(180, Math.min(e.clientX - rect.left, rect.width - 180));
+      panelLeft.style.width = w + 'px';
+    });
   });
 
   document.addEventListener('mouseup', () => {
@@ -2036,9 +2043,14 @@ function render() {
 // ═══════════════════════════════════════════════════════════════
 
 function mergeDefaultSpells() {
-  const existing = new Set(state.spells.map(s => s.id));
+  let changed = false;
   for (const s of DEFAULT_SPELLS) {
-    if (!existing.has(s.id)) state.spells.push({ ...s });
+    if (!spellMap.has(s.id)) {
+      const copy = { ...s };
+      state.spells.push(copy);
+      spellMap.set(copy.id, copy);
+      changed = true;
+    }
   }
 }
 
@@ -2052,13 +2064,16 @@ function mergeDefaultSpells() {
   let activeId = null;
   const OFFSET_X = 18, OFFSET_Y = 12;
 
+  let cachedTW = 300, cachedTH = 140;
+  function cacheTipSize() {
+    cachedTW = tip.offsetWidth  || 300;
+    cachedTH = tip.offsetHeight || 140;
+  }
   function moveTip(mx, my) {
-    const tw = tip.offsetWidth  || 300;
-    const th = tip.offsetHeight || 140;
     let x = mx + OFFSET_X;
     let y = my + OFFSET_Y;
-    if (x + tw > window.innerWidth  - 8) x = mx - tw - OFFSET_X;
-    if (y + th > window.innerHeight - 8) y = my - th - OFFSET_Y;
+    if (x + cachedTW > window.innerWidth  - 8) x = mx - cachedTW - OFFSET_X;
+    if (y + cachedTH > window.innerHeight - 8) y = my - cachedTH - OFFSET_Y;
     if (x < 8) x = 8;
     if (y < 8) y = 8;
     tip.style.left = x + 'px';
@@ -2072,6 +2087,7 @@ function mergeDefaultSpells() {
 
   const rightPanel = document.getElementById('rightPanel');
 
+  let tipRAF = 0;
   document.addEventListener('mousemove', e => {
     const item = e.target.closest('.prep-item[data-spell-id]');
     const id   = item ? +item.dataset.spellId : null;
@@ -2080,21 +2096,90 @@ function mergeDefaultSpells() {
       if (id === null) {
         hide();
       } else {
-        const spell = state.spells.find(s => s.id === id);
+        const spell = findSpell(id);
         if (spell) {
           activeId = id;
           tipDesc.textContent = spell.desc;
           tip.classList.add('visible');
+          requestAnimationFrame(cacheTipSize);
         }
       }
     }
 
-    if (activeId !== null) moveTip(e.clientX, e.clientY);
+    if (activeId !== null && !tipRAF) {
+      const mx = e.clientX, my = e.clientY;
+      tipRAF = requestAnimationFrame(() => { tipRAF = 0; moveTip(mx, my); });
+    }
   }, { passive: true });
 
   rightPanel.addEventListener('mouseleave', () => hide());
   rightPanel.addEventListener('scroll',     () => hide(), { passive: true });
 })();
+
+// ═══════════════════════════════════════════════════════════════
+// EVENT DELEGATION — RIGHT PANEL
+// ═══════════════════════════════════════════════════════════════
+
+document.getElementById('rightPanel').addEventListener('click', e => {
+  if (!isViewingCurrent()) return;
+  const item = e.target.closest('.prep-item[data-iid]');
+  if (!item) return;
+  const iid = item.dataset.iid;
+  if (e.target.closest('.use-btn'))    { toggleUsed(iid); return; }
+  if (e.target.closest('.remove-btn')) { removeInstance(iid); return; }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// EVENT DELEGATION — LEFT PANEL
+// ═══════════════════════════════════════════════════════════════
+
+document.getElementById('leftPanel').addEventListener('click', e => {
+  const badge = e.target.closest('.badge-fav');
+  if (badge) {
+    e.stopPropagation();
+    const card = badge.closest('.spell-card[data-spell-id]');
+    if (card) toggleFav(+card.dataset.spellId);
+    return;
+  }
+  const editBtn = e.target.closest('.btn-card-edit');
+  if (editBtn) {
+    e.stopPropagation();
+    const card = editBtn.closest('.spell-card[data-spell-id]');
+    if (card) openEditSpell(+card.dataset.spellId);
+    return;
+  }
+  const delBtn = e.target.closest('.btn-card-delete');
+  if (delBtn) {
+    e.stopPropagation();
+    const card = delBtn.closest('.spell-card[data-spell-id]');
+    if (card) deleteSpell(+card.dataset.spellId);
+    return;
+  }
+  const removeBtn = e.target.closest('.btn-badge-remove');
+  if (removeBtn) {
+    e.stopPropagation();
+    const card = removeBtn.closest('.spell-card[data-spell-id]');
+    if (card) removeOneInstance(+card.dataset.spellId);
+    return;
+  }
+  const addBtn = e.target.closest('.btn-add-spell[data-level]');
+  if (addBtn) {
+    openAddSpell(+addBtn.dataset.level);
+    return;
+  }
+  const hdr = e.target.closest('.level-header[data-level]');
+  if (hdr) {
+    const lvl = +hdr.dataset.level;
+    if (state.collapsed.has(lvl)) state.collapsed.delete(lvl);
+    else state.collapsed.add(lvl);
+    autoSave(); renderLeft();
+    return;
+  }
+  const card = e.target.closest('.spell-card[data-spell-id]');
+  if (card && isViewingCurrent() && !card.classList.contains('slot-full-card')) {
+    addSpell(+card.dataset.spellId);
+  }
+});
 
 // ═══════════════════════════════════════════════════════════════
 // CLICK BURST
@@ -2111,26 +2196,9 @@ document.addEventListener('mousedown', e => {
   btn.addEventListener('animationend', () => btn.classList.remove('click-burst'), { once: true });
 });
 
-function createSnow() {
-  const COUNT = 65;
-  for (let i = 0; i < COUNT; i++) {
-    const el  = document.createElement('div');
-    el.className = 'snowflake';
-    const size    = Math.random() * 3.5 + 1.5;
-    const dur     = Math.random() * 10 + 8;
-    const sway    = Math.random() * 5  + 4;
-    const drift   = (Math.random() - 0.5) * 100;
-    const opacity = Math.random() * 0.45 + 0.2;
-    const delay   = -(Math.random() * dur);
-    el.style.cssText =
-      `left:${Math.random()*100}vw;` +
-      `width:${size}px;height:${size}px;` +
-      `--snow-dur:${dur}s;--snow-sway:${sway}s;` +
-      `--snow-delay:${delay}s;` +
-      `--snow-drift:${drift}px;--snow-opacity:${opacity};`;
-    document.body.appendChild(el);
-  }
-}
+document.addEventListener('visibilitychange', () => {
+  document.body.classList.toggle('page-hidden', document.hidden);
+});
 
 function init() {
   const saved = localStorage.getItem('dnd-cleric-state');
@@ -2143,7 +2211,6 @@ function init() {
   mergeDefaultSpells();
   updateFileStatus();
   render();
-  createSnow();
 }
 
 init();
