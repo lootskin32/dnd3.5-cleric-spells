@@ -957,6 +957,66 @@
     .page-hidden *, .page-hidden *::before, .page-hidden *::after {
       animation-play-state: paused !important;
     }
+
+    /* ── FAVORITES FILTER ACTIVE STATE ── */
+    .btn-fav-filter.fav-active {
+      color:        var(--gold-light);
+      border-color: var(--gold);
+      box-shadow:   inset 0 1px 0 var(--bevel-hi), inset 0 -1px 0 var(--bevel-lo),
+                    0 0 10px rgba(200,168,75,0.4), 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    /* ── SEARCH MATCH HIGHLIGHT ── */
+    .search-hl {
+      background:    rgba(200,168,75,0.22);
+      color:         var(--gold-light);
+      border-radius: 2px;
+      padding:       0 1px;
+    }
+
+    /* ── MOBILE RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .main {
+        flex-direction: column;
+        overflow-y:     auto;
+        overflow-x:     hidden;
+      }
+      .panel-left,
+      .panel-right {
+        width:       100% !important;
+        min-width:   0;
+        height:      50vh;
+        flex-shrink: 0;
+      }
+      .divider { display: none; }
+
+      header {
+        flex-wrap: wrap;
+        padding:   8px 12px;
+        gap:       8px;
+      }
+      header h1 {
+        font-size: 15px;
+        animation: none;
+      }
+      .day-nav-btn  { padding: 4px 10px; font-size: 16px; }
+      #dayLabel     { font-size: 14px; min-width: 70px; }
+      .header-right { gap: 4px; }
+      .btn          { font-size: 13px; padding: 6px 10px; }
+
+      .panel-bar    { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+      .search-input { font-size: 16px; }
+
+      .spells-grid {
+        grid-template-columns: 1fr;
+        gap:     8px;
+        padding: 8px 10px;
+      }
+      .prep-scroll { padding: 10px 12px; }
+
+      .settings-box { width: 92vw; }
+      .modal-box    { width: 92vw; }
+    }
   </style>
 </head>
 <body>
@@ -975,6 +1035,7 @@
     <button class="day-nav-btn" id="btnPrevDay" onclick="prevDay()" title="Previous day">&#9664;</button>
     <span id="dayLabel">Day 1</span>
     <button class="day-nav-btn" id="btnNextDay" onclick="nextDay()" title="Next day">&#9654;</button>
+    <button class="day-nav-btn" id="btnToday" onclick="goToToday()" title="Jump to today" style="display:none">Today</button>
     <button class="day-nav-btn day-nav-delete" id="btnDeleteDay" onclick="deleteDay()" title="Remove this day">&#10005;</button>
   </div>
 
@@ -1071,7 +1132,14 @@
     <div class="panel-bar">
       <span class="panel-title">Available Spells</span>
       <button class="btn-add-global" onclick="openAddSpell(-1)" title="Add a spell at any level">+ Add Spell</button>
-      <input class="search-input" id="searchInput" type="text" placeholder="Search&hellip;" oninput="scheduleRenderLeft()">
+      <button class="btn-add-global btn-fav-filter" id="favFilterBtn" onclick="toggleFavFilter()" title="Show favorites only">&#9733;</button>
+      <div style="position:relative; flex:1; min-width:0;">
+        <input class="search-input" id="searchInput" type="text" placeholder="Search&hellip;" oninput="onSearchInput()" style="width:100%; padding-right:28px;">
+        <button id="searchClearBtn" onclick="clearSearch()" title="Clear search"
+                style="display:none; position:absolute; right:6px; top:50%; transform:translateY(-50%);
+                       background:none; border:none; color:var(--text-secondary); cursor:pointer;
+                       font-size:16px; line-height:1; padding:0;">&#10005;</button>
+      </div>
     </div>
     <div class="spells-scroll" id="leftPanel"></div>
   </div>
@@ -1082,6 +1150,7 @@
   <div class="panel-right">
     <div class="panel-bar">
       <span class="panel-title" id="rightPanelTitle">Today&rsquo;s Prepared Spells</span>
+      <span id="prepSummary" style="font-size:15px; color:var(--text-muted); margin-left:auto; flex-shrink:0;"></span>
     </div>
     <div class="prep-scroll" id="rightPanel"></div>
   </div>
@@ -1475,6 +1544,7 @@ function initFreshState() {
 
 let autoSaveTimer = 0;
 function autoSave() {
+  markUnsaved();
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(() => {
     try {
@@ -1491,7 +1561,7 @@ function saveFile() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = 'cleric-spells.json';
+  a.download = 'cleric-spells-' + today() + '.json';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1521,6 +1591,11 @@ function updateFileStatus() {
   document.getElementById('fileMenuBtn').style.color = '';
 }
 
+function markUnsaved() {
+  document.getElementById('fileStatus').textContent = 'Unsaved';
+  document.getElementById('fileMenuBtn').style.color = 'var(--gold-light)';
+}
+
 // File menu dropdown
 function toggleFileMenu() {
   document.getElementById('fileMenu').classList.toggle('open');
@@ -1543,6 +1618,10 @@ function prevDay() {
 function nextDay() {
   if (state.currentDayIndex < state.days.length - 1) { state.currentDayIndex++; render(); }
 }
+function goToToday() {
+  state.currentDayIndex = state.days.length - 1;
+  render();
+}
 function deleteDay() {
   if (state.days.length <= 1) return;
   const day = state.days[state.currentDayIndex];
@@ -1561,6 +1640,7 @@ function updateDayNav() {
   document.getElementById('btnPrevDay').disabled     = state.currentDayIndex === 0;
   document.getElementById('btnNextDay').disabled     = state.currentDayIndex === tot - 1;
   document.getElementById('btnDeleteDay').disabled   = tot <= 1;
+  document.getElementById('btnToday').style.display  = isViewingCurrent() ? 'none' : '';
 
   const banner = document.getElementById('pastDayBanner');
   const rpTitle = document.getElementById('rightPanelTitle');
@@ -1752,16 +1832,37 @@ function closeSettings() { document.getElementById('overlay').classList.remove('
 function onOverlayClick(e) { if (e.target === document.getElementById('overlay')) closeSettings(); }
 
 function saveSettings() {
+  const newSlots = {};
   for (let i = 0; i <= 9; i++) {
     const v = parseInt(document.getElementById('s' + i).value, 10);
-    state.slots[i] = isNaN(v) ? 0 : Math.max(0, v);
+    newSlots[i] = isNaN(v) ? 0 : Math.max(0, v);
   }
+
+  // Dry-run: count how many prepared spells would be removed
   const tally = {};
   for (let i = 0; i <= 9; i++) tally[i] = 0;
+  let wouldLose = 0;
+  for (const p of currentDay().prepared) {
+    const lvl = findSpell(p.spellId)?.level ?? -1;
+    if (lvl < 0) { wouldLose++; continue; }
+    if (tally[lvl] < newSlots[lvl]) { tally[lvl]++; }
+    else { wouldLose++; }
+  }
+
+  if (wouldLose > 0) {
+    const ok = confirm(
+      `Reducing slots will remove ${wouldLose} prepared spell${wouldLose === 1 ? '' : 's'} from today.\n\nContinue?`
+    );
+    if (!ok) return;
+  }
+
+  state.slots = newSlots;
+  const tally2 = {};
+  for (let i = 0; i <= 9; i++) tally2[i] = 0;
   currentDay().prepared = currentDay().prepared.filter(p => {
     const lvl = findSpell(p.spellId)?.level ?? -1;
     if (lvl < 0) return false;
-    if (tally[lvl] < state.slots[lvl]) { tally[lvl]++; return true; }
+    if (tally2[lvl] < state.slots[lvl]) { tally2[lvl]++; return true; }
     return false;
   });
   autoSave();
@@ -1782,10 +1883,32 @@ document.addEventListener('keydown', e => {
 // RENDER — LEFT PANEL
 // ═══════════════════════════════════════════════════════════════
 
-let searchTimer = 0;
+let searchTimer     = 0;
+let favFilterActive = false;
+
 function scheduleRenderLeft() {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => renderLeft(), 150);
+}
+
+function onSearchInput() {
+  const hasText = document.getElementById('searchInput').value.length > 0;
+  document.getElementById('searchClearBtn').style.display = hasText ? '' : 'none';
+  scheduleRenderLeft();
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchClearBtn').style.display = 'none';
+  scheduleRenderLeft();
+  document.getElementById('searchInput').focus();
+}
+
+function toggleFavFilter() {
+  favFilterActive = !favFilterActive;
+  const btn = document.getElementById('favFilterBtn');
+  btn.classList.toggle('fav-active', favFilterActive);
+  scheduleRenderLeft();
 }
 
 function renderLeft(maps) {
@@ -1798,11 +1921,12 @@ function renderLeft(maps) {
 
   for (let lvl = 0; lvl <= 9; lvl++) {
     let spells = state.spells.filter(s => s.level === lvl);
-    if (q) spells = spells.filter(s => s.name.toLowerCase().includes(q));
+    if (q) spells = spells.filter(s => s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q));
+    if (favFilterActive) spells = spells.filter(s => state.favorites.has(s.id));
 
     const max = slotMax(lvl);
-    if (!q && spells.length === 0 && max === 0) continue;
-    if (q && spells.length === 0) continue;
+    if (!q && !favFilterActive && spells.length === 0 && max === 0) continue;
+    if ((q || favFilterActive) && spells.length === 0) continue;
 
     spells.sort((a, b) => {
       const af = state.favorites.has(a.id) ? 0 : 1;
@@ -1827,7 +1951,7 @@ function renderLeft(maps) {
     hdr.dataset.level = lvl;
     hdr.innerHTML = `
       <span class="level-name">${LEVEL_NAMES[lvl]}</span>
-      <span class="slot-counter ${ctrClass}">${prepCount}&thinsp;/&thinsp;${max}</span>
+      <span class="slot-counter ${ctrClass}">${prepCount}&thinsp;/&thinsp;${max}${ctrClass === 'slot-complete' ? '&thinsp;&#10003;' : ''}</span>
       <span class="caret">&#9660;</span>`;
     const grid = document.createElement('div');
     grid.className = 'spells-grid';
@@ -1852,7 +1976,7 @@ function renderLeft(maps) {
           <button class="btn-card-action btn-card-edit"   title="Edit spell">&#9998;</button>
           <button class="btn-card-action btn-card-delete" title="Delete spell">&#10005;</button>
         </div>
-        <div class="spell-card-name">${escHtml(spell.name)}</div>
+        <div class="spell-card-name">${highlightMatch(spell.name, q)}</div>
         <div class="spell-card-desc">${escHtml(spell.desc)}</div>
         <div class="card-badges">
           <span class="badge-fav${isFav ? ' fav-active' : ''}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">&#9733;</span>
@@ -1892,7 +2016,9 @@ function renderLeft(maps) {
     msg.className = 'empty-msg';
     msg.innerHTML = q
       ? 'No spells match your search.'
-      : 'No spells yet.<br>Use &ldquo;+ Add Spell&rdquo; to get started.';
+      : favFilterActive
+        ? 'No favorited spells yet.<br>Star a spell to add it to favorites.'
+        : 'No spells yet.<br>Use &ldquo;+ Add Spell&rdquo; to get started.';
     frag.appendChild(msg);
   }
   panel.replaceChildren(frag);
@@ -1906,12 +2032,14 @@ function renderRight(maps) {
   const panel    = document.getElementById('rightPanel');
   const readOnly = !isViewingCurrent();
   const frag     = document.createDocumentFragment();
-  let hasAny = false;
+  let hasAny     = false;
+  let totalCount = 0;
 
   for (let lvl = 0; lvl <= 9; lvl++) {
     const instances = maps.prepByLevel.get(lvl) || [];
     if (instances.length === 0) continue;
-    hasAny = true;
+    hasAny      = true;
+    totalCount += instances.length;
 
     const max    = slotMax(lvl);
     const block  = document.createElement('div');
@@ -1962,6 +2090,8 @@ function renderRight(maps) {
     frag.appendChild(msg);
   }
   panel.replaceChildren(frag);
+  const summary = document.getElementById('prepSummary');
+  if (summary) summary.textContent = totalCount > 0 ? totalCount + ' prepared' : '';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1971,6 +2101,15 @@ function renderRight(maps) {
 const ESC_MAP = { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' };
 function escHtml(str) {
   return str.replace(/[&<>"]/g, c => ESC_MAP[c]);
+}
+
+function highlightMatch(text, q) {
+  if (!q) return escHtml(text);
+  const idx = text.toLowerCase().indexOf(q);
+  if (idx === -1) return escHtml(text);
+  return escHtml(text.slice(0, idx))
+    + '<mark class="search-hl">' + escHtml(text.slice(idx, idx + q.length)) + '</mark>'
+    + escHtml(text.slice(idx + q.length));
 }
 
 // ═══════════════════════════════════════════════════════════════
