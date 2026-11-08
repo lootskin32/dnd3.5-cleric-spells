@@ -4,7 +4,7 @@ A spell management tool built for Dungeons & Dragons 3.5 Edition Cleric players.
 
 ## Features
 
-- **Spell levels 0–10** — Most core rulebook spells included, plus select spells from expansion material.
+- **Spell levels 0–9** — Most core rulebook spells included, plus select spells from expansion material.
 - **Flexible spell management** — Add and remove spells freely to match your prepared list.
 - **New Day with clone support** — Start a fresh day with one click. Clone your previous setup or start from scratch, and navigate back to earlier days whenever you need to.
 - **Save / Load** — Persist your spell lists so nothing gets lost between sessions.
