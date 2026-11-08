@@ -25,8 +25,10 @@
       --purple:        #3a1e68;
       --purple-dark:   #0e0818;
       --text-primary:  #ddd0b0;
-      --text-secondary:#907848;
-      --text-muted:    #3c3018;
+      --text-secondary:#a08658;  /* >= 5.3:1 on cards */
+      --text-muted:    #8e7b56;  /* >= 4.5:1 on panels and dialogs (WCAG AA) */
+      --icon-muted:    #746240;  /* >= 3:1 for inactive icons (star, caret, card buttons) */
+      --gold-text-dim: #9a8240;  /* dim gold for headings; --gold-dim is kept for borders */
       --border-dark:   #1c1810;
       --border-gold:   #3a2e10;
       --red:           #8b1c1c;
@@ -141,6 +143,11 @@
     .file-menu.open { display: block; }
 
     .file-menu-item {
+      width:       100%;
+      background:  none;
+      border:      0;
+      text-align:  left;
+      font-family: inherit;
       padding:     12px 18px;
       cursor:      pointer;
       font-size:   18px;
@@ -340,7 +347,12 @@
     .modal-field textarea { height: 80px; resize: vertical; }
     .modal-field input:focus,
     .modal-field select:focus,
-    .modal-field textarea:focus { outline: none; border-color: var(--gold-dim); }
+    .modal-field textarea:focus,
+    .slot-row input:focus {
+      outline:      none;
+      border-color: var(--gold);
+      box-shadow:   inset 0 2px 5px rgba(0,0,0,0.65), 0 0 0 2px rgba(200,168,75,0.35);
+    }
     .modal-field select option { background: var(--bg-card); }
     .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
 
@@ -422,7 +434,8 @@
     .panel-title {
       font-family:    'Cinzel', serif;
       font-size:      16px;
-      color:          var(--gold-dim);
+      font-weight:    400;
+      color:          var(--gold-text-dim);
       text-transform: uppercase;
       letter-spacing: 2px;
       text-shadow:    0 0 6px rgba(200,168,75,0.2);
@@ -441,7 +454,11 @@
       min-width:     0;
       box-shadow:    inset 0 2px 5px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.2);
     }
-    .search-input:focus { outline: none; border-color: var(--gold-dim); }
+    .search-input:focus {
+      outline:      none;
+      border-color: var(--gold);
+      box-shadow:   inset 0 2px 5px rgba(0,0,0,0.65), 0 0 0 2px rgba(200,168,75,0.35);
+    }
     .search-wrap { position: relative; flex: 1; min-width: 0; }
     .search-clear {
       display:     none;
@@ -483,13 +500,18 @@
     /* Level sections */
     .level-section { margin-bottom: 4px; }
 
-    .level-header {
+    .level-header {             /* a <button> */
       display:       flex;
       align-items:   center;
+      width:         100%;
       padding:       12px 16px;
       cursor:        pointer;
       user-select:   none;
+      color:         inherit;
+      font:          inherit;
+      text-align:    left;
       background:    linear-gradient(180deg, #160e08 0%, #100a04 100%);
+      border:        0;
       border-top:    1px solid var(--gold-dim);
       border-bottom: 1px solid #020100;
       gap:           10px;
@@ -530,7 +552,7 @@
 
     .caret {
       font-size:  15px;
-      color:      var(--text-muted);
+      color:      var(--icon-muted);
       transition: transform 0.2s;
     }
     .level-section.collapsed .caret { transform: rotate(-90deg); }
@@ -577,14 +599,31 @@
       transform:    none;
     }
 
-    .spell-card-name {
+    .spell-card-name {          /* a <button>: the card's main "prepare" action */
+      display:       block;
+      width:         100%;
+      background:    none;
+      border:        0;
+      padding:       0 50px 0 0;
+      text-align:    left;
+      cursor:        inherit;
       font-family:   'Cinzel', serif;
       font-size:     16px;
       color:         var(--gold-light);
       text-shadow:   0 0 8px rgba(220,180,60,0.22);
       margin-bottom: 4px;
-      padding-right: 50px;
     }
+    /* Stretch the button's click/focus area over the whole card */
+    .spell-card-name::after {
+      content:       '';
+      position:      absolute;
+      inset:         0;
+      z-index:       1;
+      border-radius: 4px;
+    }
+    .spell-card-name:focus-visible        { outline: none; }
+    .spell-card-name:focus-visible::after { outline: 2px solid var(--gold-light); outline-offset: -4px; }
+    .card-badges button                   { position: relative; z-index: 2; }
     .spell-card-desc {
       font-size:   15px;
       color:       var(--text-secondary);
@@ -593,20 +632,25 @@
 
     /* Card action buttons (edit / delete) */
     .card-actions {
-      position: absolute;
-      top:      5px;
-      right:    5px;
-      display:  none;
-      gap:      2px;
+      position:       absolute;
+      top:            5px;
+      right:          5px;
+      z-index:        3;
+      display:        flex;
+      gap:            2px;
+      opacity:        0;          /* hidden but still reachable with Tab */
+      pointer-events: none;
+      transition:     opacity 0.12s;
     }
-    .spell-card:hover .card-actions { display: flex; }
+    .spell-card:hover .card-actions,
+    .spell-card:focus-within .card-actions { opacity: 1; pointer-events: auto; }
     /* Touch screens have no hover: keep edit/delete reachable without preparing the spell first */
-    @media (hover: none) { .card-actions { display: flex; } }
+    @media (hover: none) { .card-actions { opacity: 1; pointer-events: auto; } }
 
     .btn-card-action {
       background:      linear-gradient(180deg, #141008 0%, #0c0804 100%);
       border:          1px solid var(--border-dark);
-      color:           var(--text-muted);
+      color:           var(--icon-muted);
       cursor:          pointer;
       width:           26px;
       height:          26px;
@@ -629,9 +673,13 @@
       margin-top:  5px;
       align-items: center;
     }
-    .badge-fav {
+    .badge-fav {                /* a <button> */
+      background:  none;
+      border:      0;
+      padding:     0;
+      font-family: inherit;
       font-size:   18px;
-      color:       var(--text-muted);
+      color:       var(--icon-muted);
       cursor:      pointer;
       line-height: 1;
       transition:  color 0.15s;
@@ -669,7 +717,7 @@
       background:    none;
       border:        1px dashed var(--gold-dim);
       border-radius: 5px;
-      color:         var(--gold-dim);
+      color:         var(--gold-text-dim);
       cursor:        pointer;
       font-family:   'Crimson Text', serif;
       font-size:     17px;
@@ -707,7 +755,7 @@
     .prep-level-name {
       font-family:    'Cinzel', serif;
       font-size:      16px;
-      color:          var(--gold-dim);
+      color:          var(--gold-text-dim);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       text-shadow:    0 0 5px rgba(200,168,75,0.15);
@@ -744,7 +792,7 @@
       transition:    transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, opacity 0.15s;
       contain:       content;
     }
-    .prep-item.is-used { opacity: 0.45; }
+    .prep-item.is-used { opacity: 0.6; }
     .prep-item:not(.is-used):not(.read-only):hover {
       transform:    translateY(-2px) scale(1.01);
       border-color: var(--gold-dim);
@@ -757,7 +805,8 @@
       font-size: 19px;
       color:     var(--text-primary);
     }
-    .prep-item.is-used .prep-item-name { text-decoration: line-through; color: var(--text-muted); }
+    /* Faded + struck through, but still legible (~4.9:1 after the opacity) */
+    .prep-item.is-used .prep-item-name { text-decoration: line-through; }
 
     .prep-item.read-only .prep-item-controls { display: none; }
     .prep-item-status {
@@ -885,8 +934,9 @@
       display:        block;
       line-height:    1;
     }
-    .spell-card:not(.is-prepared):not(.slot-full-card):hover { transform: translateY(-4px); }
-    .spell-card:not(.is-prepared):not(.slot-full-card):hover::before { animation: card-shimmer 0.65s ease-out forwards; }
+    .spell-card:not(.is-prepared):not(.slot-full-card):not(.read-only):hover { transform: translateY(-4px); }
+    .spell-card:not(.is-prepared):not(.slot-full-card):not(.read-only):hover::before { animation: card-shimmer 0.65s ease-out forwards; }
+    .spell-card.read-only { cursor: default; }  /* viewing a past day: clicking won't prepare */
     .spell-card:hover::after { color: rgba(200,168,75,0.65); transform: rotate(45deg); }
 
     .spell-card.is-prepared           { animation: pulse-prepared 3.5s ease-in-out infinite; will-change: box-shadow; }
@@ -993,6 +1043,21 @@
       padding:       0 1px;
     }
 
+    /* ── KEYBOARD FOCUS (only shown for keyboard navigation, not mouse clicks) ── */
+    :focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+    .level-header:focus-visible,
+    .file-menu-item:focus-visible { outline-offset: -3px; }
+
+    /* ── REDUCED MOTION: honour the OS "reduce motion" setting ── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration:        0.01ms !important;
+        animation-iteration-count: 1      !important;
+        transition-duration:       0.01ms !important;
+      }
+      .spell-card:hover, .prep-item:hover { transform: none !important; }
+    }
+
     /* ── MOBILE RESPONSIVE ── */
     @media (max-width: 768px) {
       .main {
@@ -1042,7 +1107,7 @@
 <body>
 
 <!-- Spell tooltip (shown on prepared-list hover) -->
-<div id="spellTooltip" class="spell-tooltip">
+<div id="spellTooltip" class="spell-tooltip" aria-hidden="true">
   <div class="tooltip-desc"></div>
 </div>
 
@@ -1052,21 +1117,21 @@
 
   <!-- Day navigation -->
   <div class="day-nav">
-    <button class="day-nav-btn" id="btnPrevDay" onclick="prevDay()" title="Previous day">&#9664;</button>
-    <span id="dayLabel">Day 1</span>
-    <button class="day-nav-btn" id="btnNextDay" onclick="nextDay()" title="Next day">&#9654;</button>
+    <button class="day-nav-btn" id="btnPrevDay" onclick="prevDay()" title="Previous day" aria-label="Previous day">&#9664;</button>
+    <span id="dayLabel" aria-live="polite">Day 1</span>
+    <button class="day-nav-btn" id="btnNextDay" onclick="nextDay()" title="Next day" aria-label="Next day">&#9654;</button>
     <button class="day-nav-btn" id="btnToday" onclick="goToToday()" title="Jump to today" style="display:none">Today</button>
-    <button class="day-nav-btn day-nav-delete" id="btnDeleteDay" onclick="deleteDay()" title="Remove this day">&#10005;</button>
+    <button class="day-nav-btn day-nav-delete" id="btnDeleteDay" onclick="deleteDay()" title="Remove this day" aria-label="Remove this day">&#10005;</button>
   </div>
 
   <div class="header-right">
     <!-- File dropdown -->
     <div class="file-wrap" id="fileWrap">
-      <button class="btn" id="fileMenuBtn" onclick="toggleFileMenu()">&#128190; <span id="fileStatus">Unsaved</span> &#9662;</button>
+      <button class="btn" id="fileMenuBtn" onclick="toggleFileMenu()" aria-haspopup="true" aria-expanded="false" aria-controls="fileMenu">&#128190; <span id="fileStatus">Unsaved</span> &#9662;</button>
       <div class="file-menu" id="fileMenu">
-        <div class="file-menu-item" onclick="saveFile()">Export JSON&#8230;</div>
-        <div class="file-menu-item" onclick="openFile()">Import JSON&#8230;</div>
-        <div class="file-menu-item" id="restoreDefaultsItem" onclick="restoreDefaultSpells()" style="display:none"></div>
+        <button type="button" class="file-menu-item" onclick="saveFile()">Export JSON&#8230;</button>
+        <button type="button" class="file-menu-item" onclick="openFile()">Import JSON&#8230;</button>
+        <button type="button" class="file-menu-item" id="restoreDefaultsItem" onclick="restoreDefaultSpells()" style="display:none"></button>
       </div>
     </div>
 
@@ -1080,8 +1145,8 @@
 
 <!-- ═══ SETTINGS OVERLAY ══════════════════════════════════════ -->
 <div class="overlay" id="overlay" onclick="onOverlayClick(event)">
-  <div class="settings-box">
-    <h2>&#9881; Spell Slot Configuration</h2>
+  <div class="settings-box" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <h2 id="settingsTitle">&#9881; Spell Slot Configuration</h2>
     <p class="settings-note">Set your prepared spell slots per level, including bonus spells from your Wisdom modifier and domain slots.</p>
     <div id="slotForm"></div>
     <div class="settings-actions">
@@ -1093,10 +1158,10 @@
 
 <!-- ═══ SPELL MODAL (add / edit) ════════════════════════════ -->
 <div class="modal-overlay" id="spellModal" onclick="onSpellModalBg(event)">
-  <div class="modal-box">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="spellModalTitle">
     <h2 id="spellModalTitle">Add Spell</h2>
     <div class="modal-field">
-      <label>Level</label>
+      <label for="modalLevel">Level</label>
       <select id="modalLevel">
         <option value="0">Level 0 &mdash; Orisons</option>
         <option value="1">Level 1</option>
@@ -1111,11 +1176,11 @@
       </select>
     </div>
     <div class="modal-field">
-      <label>Name</label>
+      <label for="modalName">Name</label>
       <input type="text" id="modalName" placeholder="Spell name&hellip;" onkeydown="onSpellModalKey(event)">
     </div>
     <div class="modal-field">
-      <label>Description</label>
+      <label for="modalDesc">Description</label>
       <textarea id="modalDesc" placeholder="Spell description&hellip;" onkeydown="onSpellModalKey(event)"></textarea>
     </div>
     <div class="modal-actions">
@@ -1127,8 +1192,8 @@
 
 <!-- ═══ NEW DAY MODAL ════════════════════════════════════════ -->
 <div class="modal-overlay" id="newDayModal" onclick="onNewDayModalBg(event)">
-  <div class="modal-box">
-    <h2>&#9790; New Day</h2>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="newDayTitle">
+    <h2 id="newDayTitle">&#9790; New Day</h2>
     <div class="newday-options">
       <button class="newday-option" onclick="startNewDay('clean')">
         <strong>Clean Slate</strong>
@@ -1146,17 +1211,17 @@
 </div>
 
 <!-- ═══ MAIN ══════════════════════════════════════════════════ -->
-<div class="main">
+<main class="main">
 
   <!-- Left: spell browser -->
   <div class="panel-left">
     <div class="panel-bar">
-      <span class="panel-title">Available Spells</span>
+      <h2 class="panel-title">Available Spells</h2>
       <button class="btn-add-global" onclick="openAddSpell(-1)" title="Add a spell at any level">+ Add Spell</button>
-      <button class="btn-add-global btn-fav-filter" id="favFilterBtn" onclick="toggleFavFilter()" title="Show favorites only">&#9733;</button>
+      <button class="btn-add-global btn-fav-filter" id="favFilterBtn" onclick="toggleFavFilter()" title="Show favorites only" aria-label="Show favorites only" aria-pressed="false">&#9733;</button>
       <div class="search-wrap">
-        <input class="search-input" id="searchInput" type="text" placeholder="Search&hellip;" oninput="onSearchInput()" style="width:100%; padding-right:28px;">
-        <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" title="Clear search">&#10005;</button>
+        <input class="search-input" id="searchInput" type="text" placeholder="Search&hellip;" aria-label="Search spells" oninput="onSearchInput()" style="width:100%; padding-right:28px;">
+        <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" title="Clear search" aria-label="Clear search">&#10005;</button>
       </div>
     </div>
     <div class="spells-scroll" id="leftPanel"></div>
@@ -1167,13 +1232,13 @@
   <!-- Right: prepared spells -->
   <div class="panel-right">
     <div class="panel-bar">
-      <span class="panel-title" id="rightPanelTitle">Today&rsquo;s Prepared Spells</span>
+      <h2 class="panel-title" id="rightPanelTitle">Today&rsquo;s Prepared Spells</h2>
       <span id="prepSummary" style="font-size:15px; color:var(--text-muted); margin-left:auto; flex-shrink:0;"></span>
     </div>
     <div class="prep-scroll" id="rightPanel"></div>
   </div>
 
-</div>
+</main>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -1660,10 +1725,42 @@ function markSaveFailed() {
 
 // File menu dropdown
 function toggleFileMenu() {
-  document.getElementById('fileMenu').classList.toggle('open');
+  const open = document.getElementById('fileMenu').classList.toggle('open');
+  document.getElementById('fileMenuBtn').setAttribute('aria-expanded', String(open));
 }
 function closeFileMenu() {
-  document.getElementById('fileMenu').classList.remove('open');
+  const menu     = document.getElementById('fileMenu');
+  const btn      = document.getElementById('fileMenuBtn');
+  const hadFocus = menu.contains(document.activeElement);
+  menu.classList.remove('open');
+  btn.setAttribute('aria-expanded', 'false');
+  if (hadFocus) btn.focus();  // don't strand keyboard focus on a hidden item
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DIALOGS — focus moves in on open and back on close; the page behind is inert
+// ═══════════════════════════════════════════════════════════════
+
+const DIALOG_IDS = ['spellModal', 'newDayModal', 'overlay'];
+let dialogReturnFocus = null;
+
+function setBackgroundInert(inert) {
+  for (const el of document.querySelectorAll('header, #pastDayBanner, main')) el.inert = inert;
+}
+function showDialog(id, focusEl) {
+  const dlg = document.getElementById(id);
+  dialogReturnFocus = document.activeElement;
+  dlg.classList.add('open');
+  setBackgroundInert(true);
+  (focusEl || dlg.querySelector('input, select, textarea, button')).focus();
+}
+function hideDialog(id) {
+  const dlg = document.getElementById(id);
+  if (!dlg.classList.contains('open')) return;
+  dlg.classList.remove('open');
+  setBackgroundInert(false);
+  if (dialogReturnFocus && dialogReturnFocus.isConnected) dialogReturnFocus.focus({ preventScroll: true });
+  dialogReturnFocus = null;
 }
 document.addEventListener('click', e => {
   const wrap = document.getElementById('fileWrap');
@@ -1721,10 +1818,10 @@ function updateDayNav() {
 // ═══════════════════════════════════════════════════════════════
 
 function promptNewDay() {
-  document.getElementById('newDayModal').classList.add('open');
+  showDialog('newDayModal');
 }
 function closeNewDayModal() {
-  document.getElementById('newDayModal').classList.remove('open');
+  hideDialog('newDayModal');
 }
 function onNewDayModalBg(e) {
   if (e.target === document.getElementById('newDayModal')) closeNewDayModal();
@@ -1752,8 +1849,7 @@ function openAddSpell(level) {
   document.getElementById('modalLevel').value = level >= 0 ? level : 0;
   document.getElementById('modalName').value  = '';
   document.getElementById('modalDesc').value  = '';
-  document.getElementById('spellModal').classList.add('open');
-  setTimeout(() => document.getElementById('modalName').focus(), 50);
+  showDialog('spellModal', document.getElementById('modalName'));
 }
 
 function openEditSpell(spellId) {
@@ -1764,19 +1860,21 @@ function openEditSpell(spellId) {
   document.getElementById('modalLevel').value = spell.level;
   document.getElementById('modalName').value  = spell.name;
   document.getElementById('modalDesc').value  = spell.desc;
-  document.getElementById('spellModal').classList.add('open');
-  setTimeout(() => document.getElementById('modalName').focus(), 50);
+  showDialog('spellModal', document.getElementById('modalName'));
 }
 
 function closeSpellModal() {
-  document.getElementById('spellModal').classList.remove('open');
+  hideDialog('spellModal');
 }
 function onSpellModalBg(e) {
   if (e.target === document.getElementById('spellModal')) closeSpellModal();
 }
 function onSpellModalKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey && e.target.tagName !== 'TEXTAREA') saveSpell();
-  if (e.key === 'Escape') closeSpellModal();
+  if (e.key === 'Enter' && !e.shiftKey && e.target.tagName !== 'TEXTAREA') {
+    // preventDefault stops the Enter from also "clicking" the button focus returns to (reopening the dialog)
+    e.preventDefault();
+    saveSpell();
+  }
 }
 
 function saveSpell() {
@@ -1906,10 +2004,13 @@ function openSettings() {
       <input type="number" id="s${i}" min="0" max="30" value="${state.slots[i] ?? 0}">`;
     form.appendChild(row);
   }
-  document.getElementById('overlay').classList.add('open');
+  showDialog('overlay');
 }
-function closeSettings() { document.getElementById('overlay').classList.remove('open'); }
+function closeSettings() { hideDialog('overlay'); }
 function onOverlayClick(e) { if (e.target === document.getElementById('overlay')) closeSettings(); }
+document.getElementById('slotForm').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); saveSettings(); }
+});
 
 function saveSettings() {
   const newSlots = {};
@@ -1959,6 +2060,11 @@ document.addEventListener('keydown', e => {
   const key = (e.key || '').toLowerCase();        // e.key is undefined for some autofill events
   if (mod && key === 's') { e.preventDefault(); saveFile(); }
   if (mod && key === 'o') { e.preventDefault(); openFile(); }
+  if (e.key === 'Escape') {
+    const open = DIALOG_IDS.find(id => document.getElementById(id).classList.contains('open'));
+    if (open) { e.preventDefault(); hideDialog(open); }
+    else closeFileMenu();
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -1990,12 +2096,14 @@ function toggleFavFilter() {
   favFilterActive = !favFilterActive;
   const btn = document.getElementById('favFilterBtn');
   btn.classList.toggle('fav-active', favFilterActive);
+  btn.setAttribute('aria-pressed', String(favFilterActive));
   scheduleRenderLeft();
 }
 
 function renderLeft(maps) {
   if (!maps) maps = buildPrepMaps();
   const panel = document.getElementById('leftPanel');
+  const focusKeys = captureFocus(panel);
   const q     = document.getElementById('searchInput').value.trim().toLowerCase();
   const frag  = document.createDocumentFragment();
 
@@ -2028,13 +2136,16 @@ function renderLeft(maps) {
     const section     = document.createElement('div');
     section.className = 'level-section' + (isCollapsed ? ' collapsed' : '');
 
-    const hdr = document.createElement('div');
+    const hdr = document.createElement('button');
+    hdr.type = 'button';
     hdr.className = 'level-header';
     hdr.dataset.level = lvl;
+    hdr.dataset.fk    = 'hdr-' + lvl;
+    hdr.setAttribute('aria-expanded', String(!isCollapsed));
     hdr.innerHTML = `
       <span class="level-name">${LEVEL_NAMES[lvl]}</span>
       <span class="slot-counter ${ctrClass}">${prepCount}&thinsp;/&thinsp;${max}${ctrClass === 'slot-complete' ? '&thinsp;&#10003;' : ''}</span>
-      <span class="caret">&#9660;</span>`;
+      <span class="caret" aria-hidden="true">&#9660;</span>`;
     const grid = document.createElement('div');
     grid.className = 'spells-grid';
 
@@ -2046,24 +2157,33 @@ function renderLeft(maps) {
       const card = document.createElement('div');
       card.className = 'spell-card' +
         (cnt > 0    ? ' is-prepared'    : '') +
-        (slotFull   ? ' slot-full-card' : '');
+        (slotFull   ? ' slot-full-card' : '') +
+        (isCurrent  ? ''                : ' read-only');
       card.dataset.level   = lvl;
       card.dataset.spellId = spell.id;
-      card.title = slotFull
+      const prepTitle = slotFull
         ? 'No spell slots remaining for this level'
         : isCurrent ? `Click to prepare ${spell.name}${cnt > 0 ? ' (again)' : ''}` : '';
+      const nameAttr = escHtml(spell.name);
 
+      // Tab order: prepare (the name) -> favorite -> remove one -> edit -> delete
       card.innerHTML = `
-        <div class="card-actions">
-          <button class="btn-card-action btn-card-edit"   title="Edit spell">&#9998;</button>
-          <button class="btn-card-action btn-card-delete" title="Delete spell">&#10005;</button>
-        </div>
-        <div class="spell-card-name">${highlightMatch(spell.name, q)}</div>
-        <div class="spell-card-desc">${escHtml(spell.desc)}</div>
+        <button type="button" class="spell-card-name" data-fk="card-${spell.id}"
+                aria-describedby="sd-${spell.id}"${slotFull || !isCurrent ? ' aria-disabled="true"' : ''}
+                title="${escHtml(prepTitle)}">${highlightMatch(spell.name, q)}</button>
+        <div class="spell-card-desc" id="sd-${spell.id}">${escHtml(spell.desc)}</div>
         <div class="card-badges">
-          <span class="badge-fav${isFav ? ' fav-active' : ''}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">&#9733;</span>
+          <button type="button" class="badge-fav${isFav ? ' fav-active' : ''}" data-fk="fav-${spell.id}"
+                  aria-pressed="${isFav}" aria-label="Favorite ${nameAttr}"
+                  title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">&#9733;</button>
           <span class="badge-count" style="${cnt > 0 ? '' : 'visibility:hidden'}">${cnt || 1}</span>
-          <button class="btn-badge-remove" style="${cnt > 0 ? '' : 'visibility:hidden'}" title="Remove one prepared">&#10005;</button>
+          <button type="button" class="btn-badge-remove" data-fk="rm1-${spell.id}" data-fk-fallback="card-${spell.id}"
+                  style="${cnt > 0 ? '' : 'visibility:hidden'}"
+                  aria-label="Remove one prepared ${nameAttr}" title="Remove one prepared">&#10005;</button>
+        </div>
+        <div class="card-actions">
+          <button type="button" class="btn-card-action btn-card-edit"   data-fk="edit-${spell.id}" aria-label="Edit ${nameAttr}"   title="Edit spell">&#9998;</button>
+          <button type="button" class="btn-card-action btn-card-delete" data-fk="del-${spell.id}"  aria-label="Delete ${nameAttr}" title="Delete spell">&#10005;</button>
         </div>`;
 
       grid.appendChild(card);
@@ -2082,8 +2202,10 @@ function renderLeft(maps) {
     const addRow = document.createElement('div');
     addRow.className = 'add-spell-row';
     const addBtn = document.createElement('button');
+    addBtn.type        = 'button';
     addBtn.className   = 'btn-add-spell';
     addBtn.dataset.level = lvl;
+    addBtn.dataset.fk    = 'add-' + lvl;
     addBtn.textContent = '+ Add Spell at this level';
     addRow.appendChild(addBtn);
 
@@ -2104,6 +2226,7 @@ function renderLeft(maps) {
     frag.appendChild(msg);
   }
   panel.replaceChildren(frag);
+  restoreFocus(panel, focusKeys);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2112,6 +2235,7 @@ function renderLeft(maps) {
 
 function renderRight(maps) {
   const panel    = document.getElementById('rightPanel');
+  const focusKeys = captureFocus(panel);
   const readOnly = !isViewingCurrent();
   const frag     = document.createDocumentFragment();
   let hasAny     = false;
@@ -2148,13 +2272,17 @@ function renderRight(maps) {
       item.dataset.spellId = spell.id;
       item.dataset.iid     = inst.iid;
 
+      const nameAttr = escHtml(spell.name);
+      const iidAttr  = escHtml(inst.iid);
       item.innerHTML = `
-        <span class="prep-item-name">${escHtml(spell.name)}</span>
+        <span class="prep-item-name">${nameAttr}</span>
         <span class="prep-item-status">${inst.used ? '&#10003;' : '&ndash;'}</span>
         <div class="prep-item-controls">
-          <button class="btn-micro use-btn${inst.used ? ' active' : ''}"
+          <button type="button" class="btn-micro use-btn${inst.used ? ' active' : ''}" data-fk="use-${iidAttr}"
+                  aria-pressed="${inst.used}" aria-label="Cast ${nameAttr}"
                   title="${inst.used ? 'Mark as uncast' : 'Mark as cast'}">&#10003;</button>
-          <button class="btn-micro remove-btn" title="Remove from prepared">&#10005;</button>
+          <button type="button" class="btn-micro remove-btn" data-fk="rm-${iidAttr}"
+                  aria-label="Remove ${nameAttr} from prepared" title="Remove from prepared">&#10005;</button>
         </div>`;
 
       block.appendChild(item);
@@ -2172,6 +2300,7 @@ function renderRight(maps) {
     frag.appendChild(msg);
   }
   panel.replaceChildren(frag);
+  restoreFocus(panel, focusKeys);
   const summary = document.getElementById('prepSummary');
   if (summary) summary.textContent = totalCount > 0 ? totalCount + ' prepared' : '';
 }
@@ -2179,6 +2308,26 @@ function renderRight(maps) {
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
+
+// Rendering replaces the panel's DOM, which would drop keyboard focus after every action.
+// Controls carry a data-fk key; remember the focused one (plus neighbours, in case it
+// disappears, e.g. a removed spell) and focus the matching new element after rendering.
+function captureFocus(container) {
+  const a = document.activeElement;
+  if (!a || !a.dataset || !a.dataset.fk || !container.contains(a)) return null;
+  const all = [...container.querySelectorAll('[data-fk]')];
+  const i   = all.indexOf(a);
+  return [a.dataset.fk, a.dataset.fkFallback, all[i + 1]?.dataset.fk, all[i - 1]?.dataset.fk].filter(Boolean);
+}
+function restoreFocus(container, keys) {
+  if (!keys) return;
+  for (const key of keys) {
+    const el = container.querySelector('[data-fk="' + CSS.escape(key) + '"]');
+    if (!el) continue;
+    el.focus({ preventScroll: true });
+    if (document.activeElement === el) return;  // hidden elements refuse focus: try the next key
+  }
+}
 
 const ESC_MAP = { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' };
 function escHtml(str) {
@@ -2362,28 +2511,24 @@ document.getElementById('rightPanel').addEventListener('click', e => {
 document.getElementById('leftPanel').addEventListener('click', e => {
   const badge = e.target.closest('.badge-fav');
   if (badge) {
-    e.stopPropagation();
     const card = badge.closest('.spell-card[data-spell-id]');
     if (card) toggleFav(+card.dataset.spellId);
     return;
   }
   const editBtn = e.target.closest('.btn-card-edit');
   if (editBtn) {
-    e.stopPropagation();
     const card = editBtn.closest('.spell-card[data-spell-id]');
     if (card) openEditSpell(+card.dataset.spellId);
     return;
   }
   const delBtn = e.target.closest('.btn-card-delete');
   if (delBtn) {
-    e.stopPropagation();
     const card = delBtn.closest('.spell-card[data-spell-id]');
     if (card) deleteSpell(+card.dataset.spellId);
     return;
   }
   const removeBtn = e.target.closest('.btn-badge-remove');
   if (removeBtn) {
-    e.stopPropagation();
     const card = removeBtn.closest('.spell-card[data-spell-id]');
     if (card) removeOneInstance(+card.dataset.spellId);
     return;
