@@ -49,6 +49,7 @@
       display:         flex;
       flex-direction:  column;
       height:          100vh;
+      height:          100dvh; /* mobile: exclude browser toolbars */
       overflow:        hidden;
     }
 
@@ -405,6 +406,8 @@
       position:   absolute;
       inset:      0 -4px;
     }
+    .divider { touch-action: none; }
+    @media (pointer: coarse) { .divider::after { inset: 0 -10px; } }
 
     .panel-bar {
       background:    linear-gradient(180deg, #160e08 0%, #100a04 100%);
@@ -439,6 +442,21 @@
       box-shadow:    inset 0 2px 5px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.2);
     }
     .search-input:focus { outline: none; border-color: var(--gold-dim); }
+    .search-wrap { position: relative; flex: 1; min-width: 0; }
+    .search-clear {
+      display:     none;
+      position:    absolute;
+      right:       6px;
+      top:         50%;
+      transform:   translateY(-50%);
+      background:  none;
+      border:      none;
+      color:       var(--text-secondary);
+      cursor:      pointer;
+      font-size:   16px;
+      line-height: 1;
+      padding:     0;
+    }
 
     .btn-add-global {
       background:    linear-gradient(180deg, #201808 0%, #160e04 100%);
@@ -582,6 +600,8 @@
       gap:      2px;
     }
     .spell-card:hover .card-actions { display: flex; }
+    /* Touch screens have no hover: keep edit/delete reachable without preparing the spell first */
+    @media (hover: none) { .card-actions { display: flex; } }
 
     .btn-card-action {
       background:      linear-gradient(180deg, #141008 0%, #0c0804 100%);
@@ -666,6 +686,7 @@
       display:  flex;
       flex-direction: column;
       overflow: hidden;
+      min-width: 180px;
     }
 
     .prep-scroll {
@@ -872,8 +893,6 @@
     .spell-card.is-prepared::after    { color: rgba(76,174,76,0.55); }
     .spell-card.is-prepared:hover::after { animation: rune-spin 1.2s linear infinite; }
 
-    .spell-card[data-level] { border: 2px solid var(--gold-dim); }
-
     /* ══════════════════════════════════════════════════════════
        BUTTON CLICK ANIMATIONS
        ══════════════════════════════════════════════════════════ */
@@ -1005,6 +1024,7 @@
       .btn          { font-size: 13px; padding: 6px 10px; }
 
       .panel-bar    { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+      .search-wrap  { flex-basis: 100%; }
       .search-input { font-size: 16px; }
 
       .spells-grid {
@@ -1046,6 +1066,7 @@
       <div class="file-menu" id="fileMenu">
         <div class="file-menu-item" onclick="saveFile()">Export JSON&#8230;</div>
         <div class="file-menu-item" onclick="openFile()">Import JSON&#8230;</div>
+        <div class="file-menu-item" id="restoreDefaultsItem" onclick="restoreDefaultSpells()" style="display:none"></div>
       </div>
     </div>
 
@@ -1133,12 +1154,9 @@
       <span class="panel-title">Available Spells</span>
       <button class="btn-add-global" onclick="openAddSpell(-1)" title="Add a spell at any level">+ Add Spell</button>
       <button class="btn-add-global btn-fav-filter" id="favFilterBtn" onclick="toggleFavFilter()" title="Show favorites only">&#9733;</button>
-      <div style="position:relative; flex:1; min-width:0;">
+      <div class="search-wrap">
         <input class="search-input" id="searchInput" type="text" placeholder="Search&hellip;" oninput="onSearchInput()" style="width:100%; padding-right:28px;">
-        <button id="searchClearBtn" onclick="clearSearch()" title="Clear search"
-                style="display:none; position:absolute; right:6px; top:50%; transform:translateY(-50%);
-                       background:none; border:none; color:var(--text-secondary); cursor:pointer;
-                       font-size:16px; line-height:1; padding:0;">&#10005;</button>
+        <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" title="Clear search">&#10005;</button>
       </div>
     </div>
     <div class="spells-scroll" id="leftPanel"></div>
@@ -1421,6 +1439,10 @@ const DEFAULT_SPELLS = [
 
 const LEVEL_NAMES   = ["Level 0 \u2014 Orisons","Level 1","Level 2","Level 3","Level 4","Level 5","Level 6","Level 7","Level 8","Level 9"];
 const DEFAULT_SLOTS = { 0:5, 1:5, 2:4, 3:4, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0 };
+const DEFAULT_IDS   = new Set(DEFAULT_SPELLS.map(s => s.id));
+// Custom spells get ids from here up, so new default spells (keep their ids below this) never collide
+const CUSTOM_ID_START = 10000;
+const STORAGE_KEY     = 'dnd-cleric-state';
 
 // Pending card animations: spellId -> class name, consumed by renderLeft
 const cardAnims = new Map();
@@ -1434,6 +1456,7 @@ let state = {
   spells:          [],
   favorites:       new Set(),
   collapsed:       new Set(),
+  hiddenDefaults:  new Set(),   // ids of default spells the user deleted (so they stay deleted)
   days:            [],
   currentDayIndex: 0,
 };
@@ -1448,15 +1471,21 @@ function rebuildSpellMap() {
 }
 
 function uid() {
-  return crypto.randomUUID();
+  if (crypto.randomUUID) return crypto.randomUUID();
+  // randomUUID only exists on https/localhost; plain-http hosting falls back to getRandomValues
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
 }
-function today()       { return new Date().toISOString().slice(0, 10); }
+// Local calendar date (toISOString() is UTC, which is off by a day during evening sessions)
+function today() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function findSpell(id) { return spellMap.get(id); }
 function viewingDay()  { return state.days[state.currentDayIndex]; }
 function currentDay()  { return state.days[state.days.length - 1]; }
 function isViewingCurrent() { return state.currentDayIndex === state.days.length - 1; }
 function nextSpellId() {
-  return state.spells.reduce((max, s) => Math.max(max, s.id), -1) + 1;
+  return Math.max(CUSTOM_ID_START, state.spells.reduce((max, s) => Math.max(max, s.id), -1) + 1);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1470,6 +1499,7 @@ function serializeState() {
     spells:    state.spells,
     favorites: [...state.favorites],
     collapsed: [...state.collapsed],
+    hiddenDefaults: [...state.hiddenDefaults],
     days:      state.days,
   };
 }
@@ -1507,6 +1537,9 @@ function restoreState(data) {
   if (Array.isArray(data.collapsed)) {
     state.collapsed = new Set(data.collapsed.filter(c => typeof c === 'number'));
   }
+  state.hiddenDefaults = new Set(
+    Array.isArray(data.hiddenDefaults) ? data.hiddenDefaults.filter(h => typeof h === 'number') : []
+  );
 
   if (Array.isArray(data.days) && data.days.length) {
     state.days = data.days.filter(d =>
@@ -1542,15 +1575,28 @@ function initFreshState() {
 // FILE OPERATIONS
 // ═══════════════════════════════════════════════════════════════
 
+// localStorage can throw (storage disabled, private mode, quota full): never let that break the app
+function storageGet() {
+  try { return localStorage.getItem(STORAGE_KEY); } catch(e) { return null; }
+}
+function storageSet(value) {
+  try { localStorage.setItem(STORAGE_KEY, value); return true; } catch(e) { return false; }
+}
+function storageWorks() {
+  try {
+    localStorage.setItem(STORAGE_KEY + '-probe', '1');
+    localStorage.removeItem(STORAGE_KEY + '-probe');
+    return true;
+  } catch(e) { return false; }
+}
+
 let autoSaveTimer = 0;
 function autoSave() {
   markUnsaved();
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(() => {
-    try {
-      localStorage.setItem('dnd-cleric-state', JSON.stringify(serializeState()));
-    } catch(e) {}
-    updateFileStatus();
+    if (storageSet(JSON.stringify(serializeState()))) updateFileStatus();
+    else markSaveFailed();
   }, 400);
 }
 
@@ -1562,8 +1608,11 @@ function saveFile() {
   const a    = document.createElement('a');
   a.href     = url;
   a.download = 'cleric-spells-' + today() + '.json';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  // Revoking immediately can cancel the download in some browsers
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 function openFile() {
@@ -1575,8 +1624,14 @@ function openFile() {
     const file = input.files[0];
     if (!file) return;
     try {
-      const text = await file.text();
-      restoreState(JSON.parse(text));
+      const data = JSON.parse(await file.text());
+      if (!data || typeof data !== 'object' || !Array.isArray(data.spells)) {
+        alert('"' + file.name + '" is not a Cleric Spell Manager export.');
+        return;
+      }
+      if (!confirm('Import "' + file.name + '"?\nThis replaces your current spells, slots and days.')) return;
+      restoreState(data);
+      mergeDefaultSpells();
       autoSave();
       render();
     } catch(e) {
@@ -1586,14 +1641,21 @@ function openFile() {
   input.click();
 }
 
-function updateFileStatus() {
-  document.getElementById('fileStatus').textContent = 'Saved';
-  document.getElementById('fileMenuBtn').style.color = '';
+function setFileStatus(text, color, title) {
+  document.getElementById('fileStatus').textContent = text;
+  const btn = document.getElementById('fileMenuBtn');
+  btn.style.color = color;
+  btn.title = title;
 }
-
+function updateFileStatus() {
+  setFileStatus('Saved', '', 'Changes are saved automatically in this browser. Use Export to back up or move your data.');
+}
 function markUnsaved() {
-  document.getElementById('fileStatus').textContent = 'Unsaved';
-  document.getElementById('fileMenuBtn').style.color = 'var(--gold-light)';
+  setFileStatus('Unsaved', 'var(--gold-light)', 'Saving…');
+}
+function markSaveFailed() {
+  setFileStatus('Not saved', 'var(--red-light)',
+    'This browser is blocking local storage (or it is full). Use Export JSON to keep your data.');
 }
 
 // File menu dropdown
@@ -1734,21 +1796,39 @@ function saveSpell() {
   }
   closeSpellModal();
   autoSave();
-  renderLeft();
+  render(); // the prepared list shows names/levels too
 }
 
 function deleteSpell(spellId) {
   const spell = findSpell(spellId);
   if (!spell) return;
-  if (!confirm('Delete "' + spell.name + '"?\nIt will be removed from all days.')) return;
+  const isDefault = DEFAULT_IDS.has(spellId);
+  if (!confirm('Delete "' + spell.name + '"?\nIt will be removed from all days.' +
+               (isDefault ? '\n\nDefault spells can be restored from the 💾 menu.' : ''))) return;
   for (const day of state.days) {
     day.prepared = day.prepared.filter(p => p.spellId !== spellId);
   }
   state.spells = state.spells.filter(s => s.id !== spellId);
   spellMap.delete(spellId);
   state.favorites.delete(spellId);
+  if (isDefault) state.hiddenDefaults.add(spellId);
   autoSave();
   render();
+}
+
+function restoreDefaultSpells() {
+  closeFileMenu();
+  state.hiddenDefaults.clear();
+  mergeDefaultSpells();
+  autoSave();
+  render();
+}
+
+function updateRestoreItem() {
+  const n    = state.hiddenDefaults.size;
+  const item = document.getElementById('restoreDefaultsItem');
+  item.style.display = n ? '' : 'none';
+  item.textContent   = 'Restore ' + n + ' deleted default spell' + (n === 1 ? '' : 's');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1875,8 +1955,10 @@ function saveSettings() {
 // ═══════════════════════════════════════════════════════════════
 
 document.addEventListener('keydown', e => {
-  if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveFile(); }
-  if (e.ctrlKey && e.key === 'o') { e.preventDefault(); openFile(); }
+  const mod = e.ctrlKey || e.metaKey;            // Ctrl on Windows/Linux, Cmd on macOS
+  const key = (e.key || '').toLowerCase();        // e.key is undefined for some autofill events
+  if (mod && key === 's') { e.preventDefault(); saveFile(); }
+  if (mod && key === 'o') { e.preventDefault(); openFile(); }
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -1893,7 +1975,7 @@ function scheduleRenderLeft() {
 
 function onSearchInput() {
   const hasText = document.getElementById('searchInput').value.length > 0;
-  document.getElementById('searchClearBtn').style.display = hasText ? '' : 'none';
+  document.getElementById('searchClearBtn').style.display = hasText ? 'block' : 'none';
   scheduleRenderLeft();
 }
 
@@ -2134,6 +2216,7 @@ function buildPrepMaps() {
 
 function render() {
   updateDayNav();
+  updateRestoreItem();
   const maps = buildPrepMaps();
   renderLeft(maps);
   renderRight(maps);
@@ -2148,8 +2231,10 @@ function render() {
   const main      = document.querySelector('.main');
   let dragging = false;
 
-  divider.addEventListener('mousedown', e => {
+  // Pointer events (not mouse events) so the divider can also be dragged on touch screens
+  divider.addEventListener('pointerdown', e => {
     dragging = true;
+    divider.setPointerCapture(e.pointerId);
     divider.classList.add('dragging');
     document.body.style.cursor     = 'col-resize';
     document.body.style.userSelect = 'none';
@@ -2157,38 +2242,40 @@ function render() {
   });
 
   let dragRAF = 0;
-  document.addEventListener('mousemove', e => {
+  divider.addEventListener('pointermove', e => {
     if (!dragging) return;
     if (dragRAF) return;
     dragRAF = requestAnimationFrame(() => {
       dragRAF = 0;
       const rect = main.getBoundingClientRect();
       const w = Math.max(180, Math.min(e.clientX - rect.left, rect.width - 180));
-      panelLeft.style.width = w + 'px';
+      // Store as a percentage so the right panel can't be squeezed to nothing when the window shrinks
+      panelLeft.style.width = (w / rect.width * 100).toFixed(2) + '%';
     });
   });
 
-  document.addEventListener('mouseup', () => {
+  function endDrag() {
     if (!dragging) return;
     dragging = false;
     divider.classList.remove('dragging');
     document.body.style.cursor     = '';
     document.body.style.userSelect = '';
-  });
+  }
+  divider.addEventListener('pointerup',     endDrag);
+  divider.addEventListener('pointercancel', endDrag);
 })();
 
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
 
+// Adds default spells that are missing (e.g. newly added in an update), except ones the user deleted
 function mergeDefaultSpells() {
-  let changed = false;
   for (const s of DEFAULT_SPELLS) {
-    if (!spellMap.has(s.id)) {
+    if (!spellMap.has(s.id) && !state.hiddenDefaults.has(s.id)) {
       const copy = { ...s };
       state.spells.push(copy);
       spellMap.set(copy.id, copy);
-      changed = true;
     }
   }
 }
@@ -2340,7 +2427,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function init() {
-  const saved = localStorage.getItem('dnd-cleric-state');
+  const saved = storageGet();
   if (saved) {
     try { restoreState(JSON.parse(saved)); }
     catch(e) { initFreshState(); }
@@ -2348,7 +2435,9 @@ function init() {
     initFreshState();
   }
   mergeDefaultSpells();
-  updateFileStatus();
+  // Probe once so a browser that blocks storage shows "Not saved" up front, not after the first edit
+  if (storageWorks()) updateFileStatus();
+  else markSaveFailed();
   render();
 }
 
